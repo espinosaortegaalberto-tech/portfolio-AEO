@@ -596,18 +596,23 @@ let state = {
 
 function getDefaultOps(){
   return [
-    {date:'2023-03-15', ticker:'MSFT',        name:'Microsoft Corp',        cat:'Acciones/ETFs', type:'COMPRA',  broker:'DEGIRO',             qty:10,    price:280.50, fees:2.50},
-    {date:'2022-11-01', ticker:'SPY',          name:'S&P 500 ETF',           cat:'Acciones/ETFs', type:'COMPRA',  broker:'Interactive Brokers', qty:5,     price:380.00, fees:3.00},
-    {date:'2023-06-20', ticker:'NVDA',         name:'Nvidia Corp',           cat:'Acciones/ETFs', type:'COMPRA',  broker:'DEGIRO',             qty:3,     price:420.00, fees:1.50},
-    {date:'2022-01-10', ticker:'VWRL.L',       name:'Vanguard All-World ETF',cat:'Fondos',        type:'COMPRA',  broker:'MyInvestor',          qty:120.5, price:108.20, fees:0},
-    {date:'2021-05-01', ticker:'BTC-EUR',      name:'Bitcoin',               cat:'Cripto',        type:'COMPRA',  broker:'Binance',             qty:0.15,  price:48000,  fees:0},
-    {date:'2022-06-15', ticker:'ETH-EUR',      name:'Ethereum',              cat:'Cripto',        type:'COMPRA',  broker:'MetaMask',            qty:2.5,   price:1800,   fees:0},
-    {date:'2024-02-01', ticker:'',             name:'Letra Tesoro 12m',      cat:'Renta Fija',    type:'COMPRA',  broker:'Banco Directo',       qty:1,     price:10000,  fees:0},
-    {date:'2021-03-01', ticker:'',             name:'Trastero Gran Vía 12',  cat:'Trasteros',     type:'COMPRA',  broker:'Wardado',             qty:1,     price:8950,   fees:0},
-    {date:'2024-01-01', ticker:'',             name:'Trade Republic',        cat:'Cash',          type:'INGRESO', broker:'Trade Republic',      qty:1,     price:15000,  fees:0},
-    {date:'2020-01-01', ticker:'',             name:'CaixaBank C/C',         cat:'Cash',          type:'INGRESO', broker:'CaixaBank',           qty:1,     price:5000,   fees:0},
+    {uid:'op1',  date:'2023-03-15', ticker:'MSFT',    name:'Microsoft Corp',        cat:'Acciones/ETFs', type:'COMPRA',  broker:'DEGIRO',             qty:10,    price:280.50, fees:2.50},
+    {uid:'op2',  date:'2022-11-01', ticker:'SPY',     name:'S&P 500 ETF',           cat:'Acciones/ETFs', type:'COMPRA',  broker:'Interactive Brokers', qty:5,     price:380.00, fees:3.00},
+    {uid:'op3',  date:'2023-06-20', ticker:'NVDA',    name:'Nvidia Corp',           cat:'Acciones/ETFs', type:'COMPRA',  broker:'DEGIRO',             qty:3,     price:420.00, fees:1.50},
+    {uid:'op4',  date:'2022-01-10', ticker:'VWRL.L',  name:'Vanguard All-World ETF',cat:'Fondos',        type:'COMPRA',  broker:'MyInvestor',          qty:120.5, price:108.20, fees:0},
+    {uid:'op5',  date:'2021-05-01', ticker:'BTC-EUR', name:'Bitcoin',               cat:'Cripto',        type:'COMPRA',  broker:'Binance',             qty:0.15,  price:48000,  fees:0},
+    {uid:'op6',  date:'2022-06-15', ticker:'ETH-EUR', name:'Ethereum',              cat:'Cripto',        type:'COMPRA',  broker:'MetaMask',            qty:2.5,   price:1800,   fees:0},
+    {uid:'op7',  date:'2024-02-01', ticker:'',        name:'Letra Tesoro 12m',      cat:'Renta Fija',    type:'COMPRA',  broker:'Banco Directo',       qty:1,     price:10000,  fees:0},
+    {uid:'op8',  date:'2021-03-01', ticker:'',        name:'Trastero Gran Vía 12',  cat:'Trasteros',     type:'COMPRA',  broker:'Wardado',             qty:1,     price:8950,   fees:0},
+    {uid:'op9',  date:'2024-01-01', ticker:'',        name:'Trade Republic',        cat:'Cash',          type:'INGRESO', broker:'Trade Republic',      qty:1,     price:15000,  fees:0},
+    {uid:'op10', date:'2020-01-01', ticker:'',        name:'CaixaBank C/C',         cat:'Cash',          type:'INGRESO', broker:'CaixaBank',           qty:1,     price:5000,   fees:0},
   ];
 }
+
+function genUid(){ return 'op_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+// Ensure every operation has a uid (migration for old data)
+function ensureUids(){ state.operations.forEach(o=>{ if(!o.uid) o.uid=genUid(); }); }
 
 // Seed demo quotes
 if (!Object.keys(state.quotes).length) {
@@ -970,8 +975,7 @@ function renderQuotes(){
 }
 
 function renderOps(){
-  // Mostramos en orden inverso (más reciente primero) pero mantenemos el índice real en state.operations
-  const ops = state.operations.map((o,i)=>({...o, _idx:i})).reverse();
+  const ops = [...state.operations].reverse();
   document.getElementById('opsTbody').innerHTML = ops.map(o=>{
     const s=['COMPRA','INGRESO'].includes(o.type);
     const total = o.qty * o.price + (o.fees||0);
@@ -985,8 +989,8 @@ function renderOps(){
       <td class="mono">${fe(o.price)}</td>
       <td class="mono" style="font-weight:600">${fe(total)}</td>
       <td style="white-space:nowrap">
-        <button class="btn-icon btn-edit" title="Editar" onclick="editOp(${o._idx})">✏️</button>
-        <button class="btn-icon btn-del"  title="Eliminar" onclick="deleteOp(${o._idx})">🗑️</button>
+        <button class="btn-icon btn-edit" title="Editar"   onclick="editOp('${o.uid}')">✏️</button>
+        <button class="btn-icon btn-del"  title="Eliminar" onclick="deleteOp('${o.uid}')">🗑️</button>
       </td>
     </tr>`;
   }).join('');
@@ -1308,20 +1312,20 @@ function renderHistTable(){
 // ════════════════════════════════════════════════════════
 // OPERATIONS CRUD
 // ════════════════════════════════════════════════════════
-let _editIdx = null; // null = new, number = editing index
+let _editUid = null; // null = nueva operación, string = uid de la que se edita
 
-function openOpModal(idx=null){
-  _editIdx = idx;
-  const isEdit = idx !== null;
+function openOpModal(uid=null){
+  _editUid = uid;
+  const isEdit = uid !== null;
   document.getElementById('modalTitleText').textContent = isEdit ? '✏️ Editar operación' : '➕ Registrar operación';
-  document.getElementById('modalSaveBtn').textContent   = isEdit ? '💾 Guardar cambios' : '💾 Guardar operación';
+  document.getElementById('modalSaveBtn').textContent   = isEdit ? '💾 Guardar cambios'  : '💾 Guardar operación';
 
   const sub = document.getElementById('modalSubtitle');
   if(isEdit){
-    const o = state.operations[idx];
-    sub.textContent = `Editando: ${o.name} · ${o.date}`;
+    const o = state.operations.find(x=>x.uid===uid);
+    if(!o){ showToast('Operación no encontrada','neg'); return; }
+    sub.textContent  = `Editando: ${o.name} · ${o.date}`;
     sub.style.display = '';
-    // Populate fields
     document.getElementById('f-cat').value    = o.cat;
     document.getElementById('f-ticker').value = o.ticker||'';
     document.getElementById('f-name').value   = o.name;
@@ -1334,7 +1338,6 @@ function openOpModal(idx=null){
     document.getElementById('f-notes').value  = o.notes||'';
   } else {
     sub.style.display = 'none';
-    // Clear fields
     document.getElementById('f-cat').value    = 'Acciones/ETFs';
     document.getElementById('f-ticker').value = '';
     document.getElementById('f-name').value   = '';
@@ -1349,23 +1352,22 @@ function openOpModal(idx=null){
   document.getElementById('opModal').classList.add('open');
 }
 
-function editOp(idx){
-  openOpModal(idx);
-}
+function editOp(uid){ openOpModal(uid); }
 
-function deleteOp(idx){
-  const o = state.operations[idx];
-  if (!confirm(`¿Eliminar esta operación?\n\n${o.date} · ${o.type} · ${o.name} · ${fn(o.qty)} × ${fe(o.price)}`)) return;
-  state.operations.splice(idx, 1);
+function deleteOp(uid){
+  const o = state.operations.find(x=>x.uid===uid);
+  if(!o){ showToast('Operación no encontrada','neg'); return; }
+  if(!confirm(`¿Eliminar esta operación?\n\n${o.date} · ${o.type} · ${o.name}\n${fn(o.qty)} × ${fe(o.price)}`)) return;
+  state.operations = state.operations.filter(x=>x.uid!==uid);
   save();
   renderAll();
-  showToast(`🗑️ Operación eliminada: ${o.name}`,'warn');
+  showToast(`🗑️ Eliminada: ${o.name}`,'warn');
   if(gAccessToken && state.gSheetId) setTimeout(()=>syncWithSheets(), 600);
 }
 
 function closeOpModal(){
   document.getElementById('opModal').classList.remove('open');
-  _editIdx = null;
+  _editUid = null;
 }
 
 function saveOperation(){
@@ -1380,18 +1382,19 @@ function saveOperation(){
   const broker = document.getElementById('f-broker').value.trim();
   const notes  = document.getElementById('f-notes').value.trim();
 
-  if (!name||!qty||!price) { showToast('Rellena: nombre, cantidad y precio','warn'); return; }
+  if(!name||!qty||!price){ showToast('Rellena: nombre, cantidad y precio','warn'); return; }
 
-  const op = {date, ticker, name, cat, type, broker, qty, price, fees, notes};
-
-  if (_editIdx !== null) {
-    state.operations[_editIdx] = op;
-    showToast(`✅ Operación actualizada: ${name}`,'pos');
+  if(_editUid !== null){
+    // Editar — buscar por uid y reemplazar manteniendo el uid
+    const idx = state.operations.findIndex(x=>x.uid===_editUid);
+    if(idx === -1){ showToast('Operación no encontrada','neg'); return; }
+    state.operations[idx] = {uid:_editUid, date, ticker, name, cat, type, broker, qty, price, fees, notes};
+    showToast(`✅ Actualizada: ${name}`,'pos');
   } else {
-    state.operations.push(op);
+    // Nueva operación — generar uid nuevo
+    state.operations.push({uid:genUid(), date, ticker, name, cat, type, broker, qty, price, fees, notes});
     showToast(`✅ ${type} registrada: ${name}`,'pos');
-    // If ticker is new and we have a key, fetch its quote
-    if (ticker && state.avKey && !state.quotes[ticker]) {
+    if(ticker && state.avKey && !state.quotes[ticker]){
       fetchQuote(ticker).then(q=>{ if(q){state.quotes[ticker]=q;save();renderAll();} });
     }
   }
@@ -1573,6 +1576,7 @@ async function readFromSheets(){
     const opsRows = opsResp.result.values || [];
     if (opsRows.length > 1) { // skip header
       state.operations = opsRows.filter(r=>r[0]).map(r => ({
+        uid:    r[11]||genUid(),
         date:   r[0]||'', ticker: (r[1]||'').toUpperCase(), name:   r[2]||'',
         cat:    r[3]||'', type:   r[4]||'COMPRA',           broker: r[5]||'',
         qty:    parseFloat(r[6])||0, price: parseFloat(r[7])||0, fees: parseFloat(r[8])||0,
@@ -1598,10 +1602,10 @@ async function readFromSheets(){
     }
 
     save();
+    ensureUids();
     renderAll();
     const now = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-    setGStatus(`✅ Datos cargados · ${state.operations.length} operaciones · ${state.snapshots.length} snapshots · ${now}`);
-    document.getElementById('lastSyncLabel').textContent = 'Sheets: ' + now;
+    setGStatus(`✅ Datos cargados · ${state.operations.length} operaciones · ${state.snapshots.length} snapshots · ${now}`);    document.getElementById('lastSyncLabel').textContent = 'Sheets: ' + now;
     showToast(`✅ Cargado desde Google Sheets: ${state.operations.length} operaciones`,'pos');
   } catch(e) {
     setGStatus('❌ Error al leer: ' + (e.result?.error?.message || e.message || e));
@@ -1623,7 +1627,7 @@ async function syncWithSheets(){
       ['FECHA','TICKER','NOMBRE','CATEGORÍA','OPERACIÓN','BROKER','CANTIDAD','PRECIO','COMISIONES','TOTAL','NOTAS'],
       ...state.operations.map(o=>[
         o.date, o.ticker||'', o.name, o.cat, o.type, o.broker||'',
-        o.qty, o.price, o.fees||0, (o.qty*o.price+(o.fees||0)).toFixed(2), o.notes||'',
+        o.qty, o.price, o.fees||0, (o.qty*o.price+(o.fees||0)).toFixed(2), o.notes||'', o.uid||'',
       ])
     ];
     await gapi.client.sheets.spreadsheets.values.update({
@@ -1736,6 +1740,7 @@ function showToast(msg, type='pos'){
 // INIT
 // ════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
+  ensureUids();
   if(state.avKey) document.getElementById('avKey').value=state.avKey;
   if(state.gClientId) document.getElementById('gClientId').value=state.gClientId;
   if(state.gSheetId)  document.getElementById('gSheetId').value=state.gSheetId;
