@@ -284,7 +284,7 @@ select option{background:var(--card)}
       <button class="btn btn-primary" onclick="refreshAllQuotes()">🔄 Actualizar todos</button>
     </div>
     <table>
-      <thead><tr><th>Ticker</th><th>Nombre</th><th>Categoría</th><th>Precio (€)</th><th>Fecha cotiz.</th><th>Estado</th><th>Fuente</th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Nombre</th><th>Categoría</th><th>Precio (€)</th><th>Precio original</th><th>Fecha cotiz.</th><th>Estado</th><th>Fuente</th></tr></thead>
       <tbody id="quotesTbody"></tbody>
     </table>
   </div>
@@ -591,6 +591,7 @@ let state = {
   quotes: JSON.parse(localStorage.getItem('quotes') || '{}'),
   snapshots: JSON.parse(localStorage.getItem('snapshots') || '[]'),
   usdEur: parseFloat(localStorage.getItem('usdEur') || '0.93'),
+  gbpEur: parseFloat(localStorage.getItem('gbpEur') || '1.17'),
   lastRefresh: localStorage.getItem('lastRefresh') || null,
 };
 
@@ -630,7 +631,8 @@ function save(){
   localStorage.setItem('operations', JSON.stringify(state.operations));
   localStorage.setItem('quotes',     JSON.stringify(state.quotes));
   localStorage.setItem('snapshots',  JSON.stringify(state.snapshots));
-  localStorage.setItem('usdEur',     state.usdEur);
+  localStorage.setItem('usdEur', state.usdEur);
+  localStorage.setItem('gbpEur', state.gbpEur);
   if(state.lastRefresh) localStorage.setItem('lastRefresh', state.lastRefresh);
 }
 
@@ -697,43 +699,82 @@ const fn = n => n.toLocaleString('es-ES',{maximumFractionDigits:6});
 // ════════════════════════════════════════════════════════
 // ALPHA VANTAGE API
 // ════════════════════════════════════════════════════════
+
+// Tickers que cotizan en EUR o GBP (no necesitan conversión USD→EUR)
+// Sufijos europeos: .AS=Amsterdam, .MC=Madrid, .PA=París, .MI=Milán, .L=Londres(GBP), .SW=Suiza
+function detectCurrency(ticker){
+  if (ticker.endsWith('.L'))                          return 'GBP'; // Londres cotiza en peniques (GBX), ajuste abajo
+  if (/\.(AS|MC|PA|MI|DE|BR|SW|VI|HE|OL|ST)$/i.test(ticker)) return 'EUR';
+  if (ticker.includes('-EUR'))                        return 'EUR';
+  if (ticker.includes('-GBP'))                        return 'GBP';
+  return 'USD'; // Por defecto acciones USA
+}
+
 async function fetchQuote(ticker){
   if (!state.avKey) return null;
-  // Detect crypto tickers like BTC-EUR, ETH-EUR
-  if (ticker.includes('-EUR') || ticker.includes('-USD')) {
+
+  // ── Cripto y forex: usar CURRENCY_EXCHANGE_RATE ──
+  if (ticker.includes('-EUR') || ticker.includes('-USD') || ticker.includes('-GBP')) {
     const [from, to] = ticker.split('-');
     const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${state.avKey}`;
     try {
       const r = await fetch(url);
       const d = await r.json();
+      if (d['Note'] || d['Information']) { console.warn('AV rate limit:', ticker); return null; }
       const rate = parseFloat(d?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate']);
-      if (!isNaN(rate)) return {price: rate, priceEur: rate, date: new Date().toISOString().split('T')[0], source:'AV-Crypto'};
-    } catch(e){}
+      if (!isNaN(rate)) return {price:rate, priceEur:to==='EUR'?rate:rate*state.usdEur, date:new Date().toISOString().split('T')[0], source:'AV-Crypto', currency:to};
+    } catch(e){ console.error('fetchQuote crypto error', ticker, e); }
     return null;
   }
-  // Standard stock/ETF
+
+  // ── Acciones y ETFs: usar GLOBAL_QUOTE ──
   const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${state.avKey}`;
   try {
     const r = await fetch(url);
     const d = await r.json();
+    // Rate limit / error detection
+    if (d['Note'] || d['Information']){
+      console.warn('AV rate limit reached for', ticker);
+      showToast('⚠️ Límite de llamadas Alpha Vantage alcanzado (25/día). Inténtalo mañana.','warn');
+      return null;
+    }
     const q = d?.['Global Quote'];
-    if (!q || !q['05. price']) return null;
-    const price = parseFloat(q['05. price']);
-    const date  = q['07. latest trading day'] || new Date().toISOString().split('T')[0];
-    // If USD, convert to EUR
-    const priceEur = price * state.usdEur;
-    return {price, priceEur, date, source:'AV-Stock'};
-  } catch(e){ return null; }
+    if (!q || !q['05. price']) { console.warn('No price for', ticker, d); return null; }
+
+    const price    = parseFloat(q['05. price']);
+    const date     = q['07. latest trading day'] || new Date().toISOString().split('T')[0];
+    const currency = detectCurrency(ticker);
+
+    let priceEur;
+    if (currency === 'EUR') {
+      priceEur = price;                          // ya está en EUR
+    } else if (currency === 'GBP') {
+      priceEur = (price / 100) * state.gbpEur;   // Londres cotiza en peniques (GBX)
+    } else {
+      priceEur = price * state.usdEur;            // USD → EUR
+    }
+
+    return {price, priceEur, date, source:'AV-Stock', currency};
+  } catch(e){ console.error('fetchQuote error', ticker, e); return null; }
 }
 
 async function fetchUsdEur(){
   if (!state.avKey) return;
-  const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=EUR&apikey=${state.avKey}`;
   try {
-    const r = await fetch(url);
+    const r = await fetch(`https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=EUR&apikey=${state.avKey}`);
     const d = await r.json();
     const rate = parseFloat(d?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate']);
-    if (!isNaN(rate)) { state.usdEur = rate; }
+    if (!isNaN(rate)) { state.usdEur = rate; console.log('USD/EUR actualizado:', rate); }
+  } catch(e){}
+}
+
+async function fetchGbpEur(){
+  if (!state.avKey) return;
+  try {
+    const r = await fetch(`https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=GBP&to_currency=EUR&apikey=${state.avKey}`);
+    const d = await r.json();
+    const rate = parseFloat(d?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate']);
+    if (!isNaN(rate)) { state.gbpEur = rate; console.log('GBP/EUR actualizado:', rate); }
   } catch(e){}
 }
 
@@ -748,6 +789,7 @@ async function refreshAllQuotes(){
   document.getElementById('quoteStatusTop').textContent = 'Actualizando cotizaciones…';
 
   await fetchUsdEur();
+  await fetchGbpEur();
 
   // Get unique tickers from operations
   const tickers = [...new Set(state.operations.map(o=>o.ticker).filter(Boolean))];
@@ -967,6 +1009,7 @@ function renderQuotes(){
       <td>${r.name}</td>
       <td><span class="tag">${CATS[r.cat]?.label||r.cat}</span></td>
       <td class="mono">${q?fe(q.priceEur):'—'}</td>
+      <td class="mono" style="font-size:11px;color:var(--muted)">${q?`${q.price?.toFixed(4)||'—'} ${q.currency||'USD'}`:'—'}</td>
       <td class="mono" style="font-size:11px;color:var(--muted)">${q?.date||'—'}</td>
       <td>${st}</td>
       <td style="font-size:11px;color:var(--muted)">${src}</td>
