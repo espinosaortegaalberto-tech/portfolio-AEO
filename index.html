@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Tracker v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080e1a;--surface:#0e1826;--card:#111e30;--card2:#162035;
+  --border:#1e3050;--accent:#00e5a0;--accent2:#3b82f6;--accent3:#a78bfa;
+  --red:#f43f5e;--yellow:#fbbf24;--text:#e2eaf6;--muted:#647fa3;
+  --font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+.shell{display:flex;min-height:100vh}
+.sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:.3s}
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column}
+.topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50}
+.content{padding:24px 24px 48px;flex:1}
+
+/* sidebar */
+.logo{padding:20px;border-bottom:1px solid var(--border)}
+.logo-mark{display:flex;align-items:center;gap:10px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000}
+.logo-text{font-size:14px;font-weight:700}
+.logo-sub{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.nav{padding:14px 10px;flex:1;overflow-y:auto}
+.nav-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:0 8px;margin:14px 0 6px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:.15s;margin-bottom:2px;border:1px solid transparent}
+.nav-item:hover{color:var(--text);background:var(--card)}
+.nav-item.active{color:var(--accent);background:rgba(0,229,160,.07);border-color:rgba(0,229,160,.14)}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{padding:14px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.sp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;margin-right:5px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* topbar */
+.page-title{font-size:16px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.15s;font-family:var(--font)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text)}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{background:#00ffb0}
+.btn-warn{background:var(--yellow);color:#000}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px}
+
+/* cards */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;right:0;width:50px;height:50px;border-radius:0 13px 0 50px;background:var(--kpi-clr,rgba(0,229,160,.05))}
+.kpi-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.kpi-value{font-size:22px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:4px}
+.badge{display:inline-flex;align-items:center;gap:2px;padding:3px 7px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.pos{background:rgba(0,229,160,.12);color:var(--accent)}
+.neg{background:rgba(244,63,94,.12);color:var(--red)}
+.neu{background:rgba(59,130,246,.12);color:var(--accent2)}
+.warn{background:rgba(251,191,36,.12);color:var(--yellow)}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:20px}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
+
+/* table */
+table{width:100%;border-collapse:collapse}
+th{padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;background:var(--card2);border-bottom:1px solid var(--border)}
+td{padding:11px 14px;font-size:13px;border-bottom:1px solid rgba(30,48,80,.5);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.015)}
+.mono{font-family:var(--mono);font-size:12px}
+.pos-val{color:var(--accent)}
+.neg-val{color:var(--red)}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(59,130,246,.12);color:var(--accent2)}
+.ticker-badge{font-family:var(--mono);font-size:11px;background:rgba(167,139,250,.12);color:var(--accent3);padding:2px 7px;border-radius:6px}
+
+/* quote status */
+.quote-fresh{color:var(--accent);font-size:10px;font-family:var(--mono)}
+.quote-stale{color:var(--yellow);font-size:10px;font-family:var(--mono)}
+.quote-manual{color:var(--muted);font-size:10px;font-family:var(--mono)}
+.quote-err{color:var(--red);font-size:10px;font-family:var(--mono)}
+
+/* tabs */
+.tabs{display:flex;gap:3px;background:var(--card2);border-radius:9px;padding:3px;margin-bottom:18px;border:1px solid var(--border);flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:.15s;border:none;background:none;font-family:var(--font)}
+.tab.active{background:var(--card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+
+/* chart */
+.chart-wrap{position:relative;padding:16px;height:240px}
+
+/* progress */
+.prog-row{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.prog-info{display:flex;justify-content:space-between;font-size:11px}
+.prog-bar{height:5px;background:var(--surface);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:.6s}
+
+/* modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;width:min(580px,95vw);max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
+.close-btn{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+input,select,textarea{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;width:100%;transition:.15s}
+input:focus,select:focus{border-color:var(--accent2)}
+select option{background:var(--card)}
+.hint{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* section */
+.section{display:none}
+.section.active{display:block}
+
+/* spinner */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* api config */
+.api-panel{background:linear-gradient(135deg,rgba(0,229,160,.06),rgba(59,130,246,.05));border:1px solid rgba(0,229,160,.15);border-radius:13px;padding:18px;margin-bottom:20px}
+
+/* snapshot indicator */
+.snapshot-badge{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:10px;margin-bottom:18px}
+
+.hist-metric-btn.active{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+.hist-cat-btn.dimmed{opacity:.35}
+.hist-cat-btn{font-size:10px!important;padding:4px 9px!important}
+
+@media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}.grid-4{grid-template-columns:1fr 1fr}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .hamburger{display:block}.content{padding:14px}
+  .form-grid{grid-template-columns:1fr}.form-group.full{grid-column:1}
+  th:nth-child(n+5),td:nth-child(n+5){display:none}
+}
+.mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+.mobile-overlay.open{display:block}
+</style>
+</head>
+<body>
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+<div class="shell">
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <div class="logo-icon">PT</div>
+      <div><div class="logo-text">Portfolio Tracker</div><div class="logo-sub">v2.0 · Alpha Vantage</div></div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active" onclick="showSection('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</div>
+    <div class="nav-item" onclick="showSection('positions',this)"><span class="nav-icon">💼</span>Posiciones</div>
+    <div class="nav-item" onclick="showSection('ops',this)"><span class="nav-icon">📋</span>Operaciones</div>
+    <div class="nav-label">Mercado</div>
+    <div class="nav-item" onclick="showSection('quotes',this)"><span class="nav-icon">📡</span>Cotizaciones<span id="quotesBadge" style="margin-left:auto;font-size:10px;color:var(--muted)"></span></div>
+    <div class="nav-label">Análisis</div>
+    <div class="nav-item" onclick="showSection('charts',this)"><span class="nav-icon">📈</span>Gráficos</div>
+    <div class="nav-item" onclick="showSection('history',this)"><span class="nav-icon">🗓️</span>Histórico</div>
+    <div class="nav-label">Config</div>
+    <div class="nav-item" onclick="showSection('config',this)"><span class="nav-icon">⚙️</span>Configuración</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div><span class="sp-dot" id="gStatusDot" style="background:var(--muted)"></span><span id="gStatusText">Google Sheets</span></div>
+    <div style="margin-top:3px;font-size:10px" id="lastSyncLabel">—</div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <span class="page-title" id="pageTitle">Dashboard</span>
+  </div>
+  <div class="topbar-right">
+    <span id="quoteStatusTop" style="font-size:11px;color:var(--muted)"></span>
+    <button class="btn btn-ghost" onclick="refreshAllQuotes()"><span id="refreshIcon">🔄</span> Actualizar cotizaciones</button>
+    <button class="btn btn-primary" onclick="openOpModal()">+ Operación</button>
+  </div>
+</header>
+
+<main class="content">
+
+<!-- ══ DASHBOARD ══ -->
+<div class="section active" id="sec-dashboard">
+  <div class="grid-4">
+    <div class="kpi" style="--kpi-clr:rgba(0,229,160,.07)">
+      <div class="kpi-label">Valor total portfolio</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-sub"><span class="badge" id="kpi-total-badge">+0.00%</span>vs coste</div>
+    </div>
+    <div class="kpi" style="--kpi-clr:rgba(59,130,246,.07)">
+      <div class="kpi-label">Ganancia / Pérdida</div>
+      <div class="kpi-value" id="kpi-gp">—</div>
+      <div class="kpi-sub"><span class="badge" id="kpi-gp-badge">€ 0</span></div>
+    </div>
+    <div class="kpi" style="--kpi-clr:rgba(167,139,250,.07)">
+      <div class="kpi-label">Capital invertido</div>
+      <div class="kpi-value" id="kpi-cost">—</div>
+      <div class="kpi-sub"><span style="font-size:11px">Coste total compras</span></div>
+    </div>
+    <div class="kpi" style="--kpi-clr:rgba(251,191,36,.07)">
+      <div class="kpi-label">Cotizaciones activas</div>
+      <div class="kpi-value" id="kpi-tickers">—</div>
+      <div class="kpi-sub"><span id="kpi-last-update" style="font-size:11px">Sin actualizar</span></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">🥧 Distribución</span></div>
+      <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+      <div style="padding:12px 18px;display:flex;flex-direction:column;gap:8px" id="catBars"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">📊 Por categoría</span></div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px" id="catCards"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">🏆 Posiciones por valor</span>
+      <button class="btn btn-ghost" onclick="showSection('positions',document.querySelector('[onclick*=positions]'))">Ver todas →</button>
+    </div>
+    <table><thead><tr><th>Ticker</th><th>Activo</th><th>Valor actual</th><th>G/P</th><th>Rentab.</th><th>Cotización</th></tr></thead>
+    <tbody id="topPosTbody"></tbody></table>
+  </div>
+</div>
+
+<!-- ══ POSICIONES ══ -->
+<div class="section" id="sec-positions">
+  <div class="tabs" id="posTabs"></div>
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title" id="posTabTitle">Todas las posiciones</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="refreshAllQuotes()">🔄 Actualizar precios</button>
+        <button class="btn btn-primary" onclick="openOpModal()">+ Añadir</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Ticker</th><th>Nombre</th><th>Categ.</th><th>Cantidad</th><th>P. Compra</th><th>Coste</th><th>P. Actual</th><th>Valor</th><th>G/P</th><th>Rentab.</th></tr></thead>
+      <tbody id="posTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ OPERACIONES ══ -->
+<div class="section" id="sec-ops">
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">📋 Historial de operaciones</span>
+      <button class="btn btn-primary" onclick="openOpModal()">+ Nueva operación</button>
+    </div>
+    <table>
+      <thead><tr><th>Fecha</th><th>Ticker</th><th>Nombre</th><th>Categoría</th><th>Tipo</th><th>Cantidad</th><th>Precio</th><th>Total</th></tr></thead>
+      <tbody id="opsTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ COTIZACIONES ══ -->
+<div class="section" id="sec-quotes">
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">📡 Estado de cotizaciones</span>
+      <button class="btn btn-primary" onclick="refreshAllQuotes()">🔄 Actualizar todos</button>
+    </div>
+    <table>
+      <thead><tr><th>Ticker</th><th>Nombre</th><th>Categoría</th><th>Precio (€)</th><th>Fecha cotiz.</th><th>Estado</th><th>Fuente</th></tr></thead>
+      <tbody id="quotesTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ GRÁFICOS ══ -->
+<div class="section" id="sec-charts">
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">📈 Rentabilidad por categoría</span></div>
+      <div class="chart-wrap" style="height:260px"><canvas id="barChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">💰 Valor vs Coste</span></div>
+      <div class="chart-wrap" style="height:260px"><canvas id="groupedBar"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HISTÓRICO ══ -->
+<div class="section" id="sec-history">
+
+  <!-- Top bar -->
+  <div class="snapshot-badge">
+    <span style="font-size:18px">🗓️</span>
+    <div>
+      <div style="font-size:13px;font-weight:600">Snapshot semanal automático</div>
+      <div style="font-size:11px;color:var(--muted)" id="nextSnapshotLabel">Calculando próximo snapshot...</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="seedDemoSnapshots()">🎲 Demo datos</button>
+      <button class="btn btn-ghost" onclick="takeManualSnapshot()">📸 Snapshot manual</button>
+    </div>
+  </div>
+
+  <!-- KPI delta cards (último snapshot vs anterior) -->
+  <div class="grid-4" id="histKpis" style="margin-bottom:20px"></div>
+
+  <!-- CHART 1: Valor total + stacked por categoría — con selector de métrica -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-head">
+      <span class="panel-title">📈 Evolución del portfolio — valor total</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost hist-metric-btn active" data-metric="val"   onclick="setHistMetric('val',this)">Valor €</button>
+        <button class="btn btn-ghost hist-metric-btn"        data-metric="gp"    onclick="setHistMetric('gp',this)">G/P €</button>
+        <button class="btn btn-ghost hist-metric-btn"        data-metric="pct"   onclick="setHistMetric('pct',this)">Rentab. %</button>
+      </div>
+    </div>
+    <div style="height:300px;padding:8px 12px 12px"><canvas id="histTotalChart"></canvas></div>
+  </div>
+
+  <!-- CHART 2: Evolución por categoría (líneas) -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-head">
+      <span class="panel-title">📊 Evolución por categoría</span>
+      <div style="display:flex;gap:6px" id="catToggleBtns"></div>
+    </div>
+    <div style="height:300px;padding:8px 12px 12px"><canvas id="histCatChart"></canvas></div>
+  </div>
+
+  <!-- CHART 3: Composición apilada -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-head">
+      <span class="panel-title">🏗️ Composición apilada por categoría</span>
+      <span style="font-size:11px;color:var(--muted)">Área apilada · valor (€) por semana</span>
+    </div>
+    <div style="height:280px;padding:8px 12px 12px"><canvas id="histStackedChart"></canvas></div>
+  </div>
+
+  <!-- Snapshot table -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">📋 Registro de snapshots</span>
+      <span id="snapshotCount" class="badge neu">0 snapshots</span>
+    </div>
+    <table>
+      <thead><tr><th>Fecha</th><th>Sem.</th><th>Ticker</th><th>Precio (€)</th><th>Valor (€)</th><th>G/P (€)</th><th>Total Portfolio</th></tr></thead>
+      <tbody id="histTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ CONFIGURACIÓN ══ -->
+<div class="section" id="sec-config">
+
+  <!-- Alpha Vantage -->
+  <div class="api-panel">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="font-size:22px">🔑</span>
+      <div><div style="font-size:14px;font-weight:600">Alpha Vantage API</div>
+      <div style="font-size:11px;color:var(--muted)">Cotizaciones en tiempo real · 25 llamadas/día gratis</div></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:flex-end">
+      <div style="flex:1">
+        <label style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">API KEY</label>
+        <input type="text" id="avKey" placeholder="Ej: ABCDE12345FGHIJ" style="margin-top:5px;font-family:var(--mono)">
+      </div>
+      <button class="btn btn-primary" onclick="saveAvKey()">💾 Guardar</button>
+      <a href="https://www.alphavantage.co/support/#api-key" target="_blank" class="btn btn-ghost">🔗 Obtener key</a>
+    </div>
+    <div id="avStatus" style="margin-top:10px;font-size:11px;color:var(--muted)"></div>
+  </div>
+
+  <!-- Google Sheets connection -->
+  <div style="background:linear-gradient(135deg,rgba(66,133,244,.08),rgba(52,168,83,.06));border:1px solid rgba(66,133,244,.2);border-radius:13px;padding:20px;margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <svg width="28" height="28" viewBox="0 0 48 48"><path fill="#43A047" d="M37 45H11a3 3 0 01-3-3V6a3 3 0 013-3h19l10 10v29a3 3 0 01-3 3z"/><path fill="#C8E6C9" d="M40 13H30V3z"/><path fill="#E8F5E9" d="M31 23H17v2h14zm0 4H17v2h14zm-7 4h-7v2h7z"/><path fill="#1B5E20" d="M30 3v10h10z" opacity=".2"/></svg>
+      <div>
+        <div style="font-size:14px;font-weight:700">Google Sheets</div>
+        <div style="font-size:11px;color:var(--muted)">Base de datos en la nube · sincronización bidireccional real</div>
+      </div>
+      <div style="margin-left:auto" id="gAuthStatus">
+        <span class="badge warn" id="gAuthBadge">● No conectado</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Client ID -->
+    <div style="background:var(--card2);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Paso 1 — OAuth Client ID (Google Cloud Console)</div>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div style="flex:1">
+          <label>Client ID de Google</label>
+          <input type="text" id="gClientId" placeholder="xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com" style="font-family:var(--mono);font-size:11px;margin-top:5px">
+        </div>
+        <button class="btn btn-ghost" onclick="saveGClientId()">💾 Guardar</button>
+        <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="btn btn-ghost">🔗 Consola</a>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.6">
+        En Google Cloud Console: <strong style="color:var(--text)">APIs y servicios → Credenciales → + Crear credenciales → ID de cliente OAuth → Aplicación web</strong>.
+        Añade <code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:10px">http://localhost</code> y la URL donde hospedarás la app en "Orígenes autorizados".
+      </div>
+    </div>
+
+    <!-- Step 2: Spreadsheet ID -->
+    <div style="background:var(--card2);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Paso 2 — ID de la hoja de Google Sheets</div>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div style="flex:1">
+          <label>Spreadsheet ID</label>
+          <input type="text" id="gSheetId" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" style="font-family:var(--mono);font-size:11px;margin-top:5px">
+          <span class="hint">La parte en negrita de la URL: docs.google.com/spreadsheets/d/<strong>ID</strong>/edit</span>
+        </div>
+        <button class="btn btn-ghost" onclick="saveGSheetId()">💾 Guardar</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Connect -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="gConnectBtn" onclick="googleSignIn()" style="gap:8px">
+        <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 32.4 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 5 12.9 5 4 13.9 4 25s8.9 20 20 20c11 0 19.4-8 19.4-19.4 0-1.2-.1-2.4-.3-3.6z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.8 18.9 13 24 13c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 5c-7.7 0-14.3 4.4-17.7 9.7z"/><path fill="#4CAF50" d="M24 45c5 0 9.5-1.9 12.9-4.9l-6-4.9C29.3 36.9 26.8 38 24 38c-5.2 0-9.6-3.5-11.2-8.2l-6.5 5C9.8 40.7 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6 4.9C41.4 35.3 44 30.5 44 25c0-1.2-.1-2.4-.3-3.6z" opacity=".9"/></svg>
+        Conectar con Google
+      </button>
+      <button class="btn btn-ghost" id="gDisconnectBtn" onclick="googleSignOut()" style="display:none">🔌 Desconectar</button>
+      <button class="btn btn-ghost" id="gSyncBtn" onclick="syncWithSheets()" style="display:none">🔄 Sincronizar ahora</button>
+      <button class="btn btn-ghost" id="gReadBtn" onclick="readFromSheets()" style="display:none">📥 Cargar desde Sheets</button>
+    </div>
+    <div id="gSyncStatus" style="margin-top:10px;font-size:11px;color:var(--muted)"></div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Snapshots -->
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">🗓️ Snapshots semanales</span></div>
+      <div style="padding:18px;font-size:13px;line-height:1.9;color:var(--muted)">
+        <p><strong style="color:var(--text)">¿Cuándo?</strong> Cada domingo automáticamente al abrir la app, o manualmente.</p>
+        <p style="margin-top:8px"><strong style="color:var(--text)">¿Qué guarda?</strong> Una fila por ticker con: precio, cantidad, valor, G/P y total del portfolio.</p>
+        <p style="margin-top:8px"><strong style="color:var(--text)">¿Dónde?</strong> Hoja "Histórico" en Google Sheets + almacenamiento local.</p>
+        <p style="margin-top:8px"><strong style="color:var(--text)">Snapshots guardados:</strong> <span id="snapshotCountConfig" class="badge neu">0</span></p>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="takeManualSnapshot()">📸 Snapshot manual</button>
+          <button class="btn btn-ghost" onclick="clearSnapshots()">🗑️ Limpiar local</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ticker guide -->
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">📖 Guía de tickers</span></div>
+      <div style="padding:18px;display:flex;flex-direction:column;gap:10px;font-size:12px">
+        <div><strong style="color:var(--text)">Acciones USA</strong><br><span class="ticker-badge">MSFT</span> <span class="ticker-badge">AAPL</span> <span class="ticker-badge">NVDA</span> <span class="ticker-badge">AMZN</span></div>
+        <div><strong style="color:var(--text)">Acciones EU</strong><br><span class="ticker-badge">ASML.AS</span> <span class="ticker-badge">SAN.MC</span> <span class="ticker-badge">AIR.PA</span></div>
+        <div><strong style="color:var(--text)">ETFs</strong><br><span class="ticker-badge">SPY</span> <span class="ticker-badge">QQQ</span> <span class="ticker-badge">VWRL.L</span></div>
+        <div><strong style="color:var(--text)">Cripto (par EUR)</strong><br><span class="ticker-badge">BTC-EUR</span> <span class="ticker-badge">ETH-EUR</span></div>
+        <div><strong style="color:var(--text)">Sin ticker</strong> → <span class="badge neu">Cash</span> <span class="badge neu">Trasteros</span> <span class="badge neu">Renta Fija manual</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="panel">
+    <div class="panel-head"><span class="panel-title">🔄 Cómo funciona la integración</span></div>
+    <div style="padding:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;text-align:center">
+      <div style="background:var(--card2);border-radius:10px;padding:14px">
+        <div style="font-size:22px;margin-bottom:6px">🔐</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">1. Login Google</div>
+        <div style="font-size:10px;color:var(--muted)">OAuth2 popup — autorizas acceso a tus Sheets</div>
+      </div>
+      <div style="background:var(--card2);border-radius:10px;padding:14px">
+        <div style="font-size:22px;margin-bottom:6px">📥</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">2. Carga datos</div>
+        <div style="font-size:10px;color:var(--muted)">Lee operaciones e histórico desde Google Sheets</div>
+      </div>
+      <div style="background:var(--card2);border-radius:10px;padding:14px">
+        <div style="font-size:22px;margin-bottom:6px">📡</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">3. Cotizaciones</div>
+        <div style="font-size:10px;color:var(--muted)">Alpha Vantage actualiza precios en tiempo real</div>
+      </div>
+      <div style="background:var(--card2);border-radius:10px;padding:14px">
+        <div style="font-size:22px;margin-bottom:6px">📤</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">4. Guarda</div>
+        <div style="font-size:10px;color:var(--muted)">Snapshots y cambios se escriben de vuelta a Sheets</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+</div>
+
+<!-- ── MODAL OPERACIÓN ── -->
+<div class="overlay" id="opModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span>➕ Registrar operación</span>
+      <button class="close-btn" onclick="closeOpModal()">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Categoría</label>
+        <select id="f-cat">
+          <option value="Acciones/ETFs">💹 Acciones / ETFs</option>
+          <option value="Fondos">📦 Fondos de Inversión</option>
+          <option value="Cripto">₿ Criptomonedas</option>
+          <option value="Renta Fija">🏦 Renta Fija / Bonos</option>
+          <option value="Trasteros">🏪 Trasteros (Wardado)</option>
+          <option value="Cash">💰 Cash / Cuentas</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ticker (Yahoo Finance format)</label>
+        <input type="text" id="f-ticker" placeholder="MSFT · BTC-EUR · SPY">
+        <span class="hint">Dejar vacío si no cotiza (Cash, Trasteros)</span>
+      </div>
+      <div class="form-group">
+        <label>Nombre / Descripción</label>
+        <input type="text" id="f-name" placeholder="Microsoft Corp">
+      </div>
+      <div class="form-group">
+        <label>Tipo de operación</label>
+        <select id="f-type"><option>COMPRA</option><option>VENTA</option><option>DIVIDENDO</option><option>INGRESO</option></select>
+      </div>
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="form-group">
+        <label>Cantidad</label>
+        <input type="number" id="f-qty" placeholder="10" step="0.0001">
+      </div>
+      <div class="form-group">
+        <label>Precio unitario (€)</label>
+        <input type="number" id="f-price" placeholder="280.50" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Comisiones (€)</label>
+        <input type="number" id="f-fees" placeholder="0" step="0.01" value="0">
+      </div>
+      <div class="form-group">
+        <label>Broker / Exchange</label>
+        <input type="text" id="f-broker" placeholder="DEGIRO · Binance · MyInvestor">
+      </div>
+      <div class="form-group full">
+        <label>Notas</label>
+        <input type="text" id="f-notes" placeholder="Observaciones opcionales">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn btn-ghost" onclick="closeOpModal()" style="flex:1">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveOperation()" style="flex:2">💾 Guardar operación</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+const CATS = {
+  'Acciones/ETFs': {label:'💹 Acciones/ETFs', color:'#3b82f6'},
+  'Fondos':        {label:'📦 Fondos',        color:'#a78bfa'},
+  'Cripto':        {label:'₿ Cripto',         color:'#fbbf24'},
+  'Renta Fija':    {label:'🏦 Renta Fija',    color:'#f43f5e'},
+  'Trasteros':     {label:'🏪 Trasteros',     color:'#00e5a0'},
+  'Cash':          {label:'💰 Cash',          color:'#6366f1'},
+};
+
+let state = {
+  avKey:     localStorage.getItem('av_key') || '',
+  gClientId: localStorage.getItem('g_client_id') || '',
+  gSheetId:  localStorage.getItem('g_sheet_id') || '',
+  operations: JSON.parse(localStorage.getItem('operations') || 'null') || getDefaultOps(),
+  quotes: JSON.parse(localStorage.getItem('quotes') || '{}'),
+  snapshots: JSON.parse(localStorage.getItem('snapshots') || '[]'),
+  usdEur: parseFloat(localStorage.getItem('usdEur') || '0.93'),
+  lastRefresh: localStorage.getItem('lastRefresh') || null,
+};
+
+function getDefaultOps(){
+  return [
+    {date:'2023-03-15', ticker:'MSFT',        name:'Microsoft Corp',        cat:'Acciones/ETFs', type:'COMPRA',  broker:'DEGIRO',             qty:10,    price:280.50, fees:2.50},
+    {date:'2022-11-01', ticker:'SPY',          name:'S&P 500 ETF',           cat:'Acciones/ETFs', type:'COMPRA',  broker:'Interactive Brokers', qty:5,     price:380.00, fees:3.00},
+    {date:'2023-06-20', ticker:'NVDA',         name:'Nvidia Corp',           cat:'Acciones/ETFs', type:'COMPRA',  broker:'DEGIRO',             qty:3,     price:420.00, fees:1.50},
+    {date:'2022-01-10', ticker:'VWRL.L',       name:'Vanguard All-World ETF',cat:'Fondos',        type:'COMPRA',  broker:'MyInvestor',          qty:120.5, price:108.20, fees:0},
+    {date:'2021-05-01', ticker:'BTC-EUR',      name:'Bitcoin',               cat:'Cripto',        type:'COMPRA',  broker:'Binance',             qty:0.15,  price:48000,  fees:0},
+    {date:'2022-06-15', ticker:'ETH-EUR',      name:'Ethereum',              cat:'Cripto',        type:'COMPRA',  broker:'MetaMask',            qty:2.5,   price:1800,   fees:0},
+    {date:'2024-02-01', ticker:'',             name:'Letra Tesoro 12m',      cat:'Renta Fija',    type:'COMPRA',  broker:'Banco Directo',       qty:1,     price:10000,  fees:0},
+    {date:'2021-03-01', ticker:'',             name:'Trastero Gran Vía 12',  cat:'Trasteros',     type:'COMPRA',  broker:'Wardado',             qty:1,     price:8950,   fees:0},
+    {date:'2024-01-01', ticker:'',             name:'Trade Republic',        cat:'Cash',          type:'INGRESO', broker:'Trade Republic',      qty:1,     price:15000,  fees:0},
+    {date:'2020-01-01', ticker:'',             name:'CaixaBank C/C',         cat:'Cash',          type:'INGRESO', broker:'CaixaBank',           qty:1,     price:5000,   fees:0},
+  ];
+}
+
+// Seed demo quotes
+if (!Object.keys(state.quotes).length) {
+  state.quotes = {
+    'MSFT':    {price:415.20, priceEur:415.20*0.93, date:'2025-03-28', source:'demo'},
+    'SPY':     {price:520.00, priceEur:520.00*0.93, date:'2025-03-28', source:'demo'},
+    'NVDA':    {price:875.00, priceEur:875.00*0.93, date:'2025-03-28', source:'demo'},
+    'VWRL.L':  {price:145.60, priceEur:145.60*0.86, date:'2025-03-28', source:'demo'},
+    'BTC-EUR': {price:63800,  priceEur:63800,        date:'2025-03-28', source:'demo'},
+    'ETH-EUR': {price:3200,   priceEur:3200,         date:'2025-03-28', source:'demo'},
+  };
+}
+
+function save(){
+  localStorage.setItem('operations', JSON.stringify(state.operations));
+  localStorage.setItem('quotes',     JSON.stringify(state.quotes));
+  localStorage.setItem('snapshots',  JSON.stringify(state.snapshots));
+  localStorage.setItem('usdEur',     state.usdEur);
+  if(state.lastRefresh) localStorage.setItem('lastRefresh', state.lastRefresh);
+}
+
+// ════════════════════════════════════════════════════════
+// AGGREGATION
+// ════════════════════════════════════════════════════════
+function getPositions(){
+  // Aggregate ops by ticker+name+cat, COMPRA adds, VENTA subtracts
+  const map = {};
+  state.operations.forEach(op => {
+    const key = (op.ticker||'__'+op.name) + '|' + op.cat;
+    if (!map[key]) map[key] = {ticker:op.ticker, name:op.name, cat:op.cat, qty:0, totalCost:0};
+    if (['COMPRA','INGRESO'].includes(op.type)) {
+      map[key].qty       += op.qty;
+      map[key].totalCost += op.qty * op.price + (op.fees||0);
+    } else if (op.type === 'VENTA') {
+      map[key].qty       -= op.qty;
+      map[key].totalCost -= op.qty * op.price;
+    }
+  });
+  return Object.values(map).filter(p => p.qty > 0.0001).map(p => {
+    const avgBuy = p.qty > 0 ? p.totalCost / p.qty : 0;
+    const q = p.ticker ? state.quotes[p.ticker] : null;
+    const curPrice = q ? q.priceEur : (p.totalCost / Math.max(p.qty,1));
+    const val  = p.qty * curPrice;
+    const cost = p.totalCost;
+    const gp   = val - cost;
+    const pct  = cost ? gp/cost : 0;
+    return {...p, avgBuy, curPrice, val, cost, gp, pct, quoteDate: q?.date, quoteSource: q?.source};
+  });
+}
+
+function getCatTotals(){
+  const pos = getPositions();
+  const result = {};
+  Object.keys(CATS).forEach(k => { result[k]={val:0,cost:0,gp:0}; });
+  pos.forEach(p => {
+    if(result[p.cat]){
+      result[p.cat].val  += p.val;
+      result[p.cat].cost += p.cost;
+      result[p.cat].gp   += p.gp;
+    }
+  });
+  Object.keys(result).forEach(k => {
+    result[k].pct = result[k].cost ? result[k].gp/result[k].cost : 0;
+  });
+  return result;
+}
+
+function getTotal(){
+  const ct = getCatTotals();
+  let val=0, cost=0, gp=0;
+  Object.values(ct).forEach(c=>{val+=c.val;cost+=c.cost;gp+=c.gp;});
+  return {val, cost, gp, pct: cost ? gp/cost : 0};
+}
+
+// ════════════════════════════════════════════════════════
+// FORMAT HELPERS
+// ════════════════════════════════════════════════════════
+const fe = n => '€ ' + n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fp = n => (n>=0?'+':'') + (n*100).toFixed(2) + '%';
+const fn = n => n.toLocaleString('es-ES',{maximumFractionDigits:6});
+
+// ════════════════════════════════════════════════════════
+// ALPHA VANTAGE API
+// ════════════════════════════════════════════════════════
+async function fetchQuote(ticker){
+  if (!state.avKey) return null;
+  // Detect crypto tickers like BTC-EUR, ETH-EUR
+  if (ticker.includes('-EUR') || ticker.includes('-USD')) {
+    const [from, to] = ticker.split('-');
+    const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${state.avKey}`;
+    try {
+      const r = await fetch(url);
+      const d = await r.json();
+      const rate = parseFloat(d?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate']);
+      if (!isNaN(rate)) return {price: rate, priceEur: rate, date: new Date().toISOString().split('T')[0], source:'AV-Crypto'};
+    } catch(e){}
+    return null;
+  }
+  // Standard stock/ETF
+  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${state.avKey}`;
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    const q = d?.['Global Quote'];
+    if (!q || !q['05. price']) return null;
+    const price = parseFloat(q['05. price']);
+    const date  = q['07. latest trading day'] || new Date().toISOString().split('T')[0];
+    // If USD, convert to EUR
+    const priceEur = price * state.usdEur;
+    return {price, priceEur, date, source:'AV-Stock'};
+  } catch(e){ return null; }
+}
+
+async function fetchUsdEur(){
+  if (!state.avKey) return;
+  const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=EUR&apikey=${state.avKey}`;
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    const rate = parseFloat(d?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate']);
+    if (!isNaN(rate)) { state.usdEur = rate; }
+  } catch(e){}
+}
+
+async function refreshAllQuotes(){
+  if (!state.avKey) {
+    showToast('⚠️ Configura tu Alpha Vantage API Key primero', 'warn');
+    showSection('config', document.querySelector('[onclick*=config]'));
+    return;
+  }
+  const icon = document.getElementById('refreshIcon');
+  icon.innerHTML = '<span class="spin"></span>';
+  document.getElementById('quoteStatusTop').textContent = 'Actualizando cotizaciones…';
+
+  await fetchUsdEur();
+
+  // Get unique tickers from operations
+  const tickers = [...new Set(state.operations.map(o=>o.ticker).filter(Boolean))];
+  let updated = 0, failed = 0;
+  for (const ticker of tickers) {
+    const q = await fetchQuote(ticker);
+    if (q) { state.quotes[ticker] = q; updated++; }
+    else { failed++; }
+    await new Promise(r => setTimeout(r, 500)); // respect rate limit
+  }
+
+  state.lastRefresh = new Date().toISOString();
+  save();
+  icon.innerHTML = '🔄';
+  document.getElementById('quoteStatusTop').textContent = `✅ ${updated} actualizados · ${failed} errores`;
+  document.getElementById('lastSyncLabel').textContent = 'Cotiz: ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('quotesBadge').textContent = updated > 0 ? '✓' : '';
+  renderAll();
+  showToast(`✅ ${updated} cotizaciones actualizadas · ${failed} sin datos`, updated>0?'pos':'warn');
+  checkAndTakeSnapshot();
+}
+
+// ════════════════════════════════════════════════════════
+// SNAPSHOT SYSTEM
+// ════════════════════════════════════════════════════════
+function getLastSunday(){
+  const d = new Date();
+  const day = d.getDay(); // 0=Sun
+  const diff = day === 0 ? 0 : day;
+  d.setDate(d.getDate() - diff);
+  d.setHours(0,0,0,0);
+  return d.toISOString().split('T')[0];
+}
+
+function getNextSunday(){
+  const d = new Date();
+  const daysUntil = d.getDay() === 0 ? 7 : 7 - d.getDay();
+  d.setDate(d.getDate() + daysUntil);
+  return d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+}
+
+function checkAndTakeSnapshot(){
+  const lastSunday = getLastSunday();
+  const alreadyDone = state.snapshots.some(s => s.date === lastSunday);
+  if (!alreadyDone) {
+    const dayOfWeek = new Date().getDay();
+    if (dayOfWeek === 0) { // It's Sunday
+      takeSnapshot(lastSunday);
+    }
+  }
+}
+
+function takeManualSnapshot(){
+  const d = new Date();
+  const dateStr = d.toISOString().split('T')[0];
+  const exists = state.snapshots.some(s => s.date === dateStr && s.manual);
+  if (exists) { showToast('Ya existe un snapshot para hoy', 'warn'); return; }
+  takeSnapshot(dateStr, true);
+}
+
+function takeSnapshot(dateStr, manual=false){
+  const pos = getPositions();
+  const tot = getTotal();
+  const weekNum = getWeekNumber(new Date(dateStr));
+  const entries = pos.map(p => ({
+    date:dateStr, week:weekNum, manual,
+    ticker: p.ticker || '—', name:p.name, cat:p.cat,
+    qty:p.qty, price:p.curPrice, cost:p.cost, val:p.val, gp:p.gp, pct:p.pct,
+    totalPortfolio: tot.val,
+  }));
+  state.snapshots.push(...entries);
+  save();
+  renderHistory();
+  showToast(`📸 Snapshot guardado: ${dateStr} (${pos.length} posiciones)`, 'pos');
+}
+
+function getWeekNumber(d){
+  const s = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  s.setUTCDate(s.getUTCDate() + 4 - (s.getUTCDay()||7));
+  const y = new Date(Date.UTC(s.getUTCFullYear(),0,1));
+  return Math.ceil((((s-y)/86400000)+1)/7);
+}
+
+function clearSnapshots(){
+  if (!confirm('¿Eliminar todo el histórico local de snapshots?')) return;
+  state.snapshots = [];
+  save();
+  renderHistory();
+  showToast('🗑️ Histórico local eliminado', 'warn');
+}
+
+// ════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════
+let charts = {};
+
+function renderAll(){
+  renderDashboard();
+  if (document.getElementById('sec-positions').classList.contains('active')) renderPositions('all');
+  if (document.getElementById('sec-quotes').classList.contains('active')) renderQuotes();
+  if (document.getElementById('sec-ops').classList.contains('active')) renderOps();
+  if (document.getElementById('sec-charts').classList.contains('active')) renderCharts();
+  if (document.getElementById('sec-history').classList.contains('active')) renderHistory();
+}
+
+function renderDashboard(){
+  const tot = getTotal();
+  const ct  = getCatTotals();
+
+  document.getElementById('kpi-total').textContent = fe(tot.val);
+  const tb = document.getElementById('kpi-total-badge');
+  tb.textContent = fp(tot.pct); tb.className = 'badge ' + (tot.pct>=0?'pos':'neg');
+
+  document.getElementById('kpi-gp').textContent = fe(tot.gp);
+  const gb = document.getElementById('kpi-gp-badge');
+  gb.textContent = (tot.gp>=0?'+':'') + fe(tot.gp); gb.className = 'badge ' + (tot.gp>=0?'pos':'neg');
+
+  document.getElementById('kpi-cost').textContent = fe(tot.cost);
+
+  const tickers = [...new Set(state.operations.map(o=>o.ticker).filter(Boolean))];
+  document.getElementById('kpi-tickers').textContent = tickers.length;
+  const fresh = Object.values(state.quotes).filter(q=>q.source!=='demo').length;
+  document.getElementById('kpi-last-update').textContent = state.lastRefresh
+    ? `Actualizado: ${new Date(state.lastRefresh).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`
+    : 'Precios demo (pulsa actualizar)';
+
+  // Donut
+  const catKeys = Object.keys(CATS);
+  const vals = catKeys.map(k=>ct[k].val);
+  const cols = catKeys.map(k=>CATS[k].color);
+  const labels = catKeys.map(k=>CATS[k].label);
+  if(charts.donut) charts.donut.destroy();
+  charts.donut = new Chart(document.getElementById('donutChart'),{
+    type:'doughnut',
+    data:{labels, datasets:[{data:vals, backgroundColor:cols, borderColor:'#111e30', borderWidth:3, hoverOffset:5}]},
+    options:{cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${fe(c.raw)}`}}},animation:{duration:500}}
+  });
+
+  // Category bars
+  document.getElementById('catBars').innerHTML = catKeys.map(k=>{
+    const c=ct[k]; const pct=tot.val?(c.val/tot.val*100):0;
+    return `<div class="prog-row">
+      <div class="prog-info"><span style="font-size:11px;font-weight:600">${CATS[k].label}</span>
+        <span class="mono ${c.gp>=0?'pos-val':'neg-val'}">${pct.toFixed(1)}%</span></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${CATS[k].color}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Cat cards
+  document.getElementById('catCards').innerHTML = catKeys.map(k=>{
+    const c=ct[k]; const s=c.gp>=0;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--card2);border-radius:9px;border:1px solid var(--border)">
+      <span style="font-size:12px;font-weight:600">${CATS[k].label}</span>
+      <span class="mono" style="font-size:12px;font-weight:600">${fe(c.val)}</span>
+      <span class="badge ${s?'pos':'neg'}">${fp(c.pct)}</span>
+    </div>`;
+  }).join('');
+
+  // Top positions
+  const pos = getPositions().sort((a,b)=>b.val-a.val).slice(0,8);
+  document.getElementById('topPosTbody').innerHTML = pos.map(p=>{
+    const s=p.gp>=0;
+    const qStatus = !p.ticker ? 'manual' : (p.quoteSource==='demo' ? 'demo' : 'live');
+    return `<tr>
+      <td>${p.ticker ? `<span class="ticker-badge">${p.ticker}</span>` : '<span class="quote-manual">—</span>'}</td>
+      <td><span style="font-size:12px;font-weight:600">${p.name}</span><br><span class="tag">${CATS[p.cat]?.label}</span></td>
+      <td class="mono" style="font-weight:600">${fe(p.val)}</td>
+      <td class="mono ${s?'pos-val':'neg-val'}">${s?'+':''}${fe(p.gp)}</td>
+      <td><span class="badge ${s?'pos':'neg'}">${fp(p.pct)}</span></td>
+      <td>${qStatus==='live'?`<span class="quote-fresh">● ${fe(p.curPrice)}</span>`:qStatus==='demo'?`<span class="quote-stale">◎ demo</span>`:`<span class="quote-manual">● manual</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPositions(tab){
+  const catKeys = Object.keys(CATS);
+  const tabs = [['all','📊 Todas'], ...catKeys.map(k=>[k,CATS[k].label])];
+  document.getElementById('posTabs').innerHTML = tabs.map(([k,l])=>
+    `<button class="tab ${tab===k?'active':''}" onclick="renderPositions('${k}')">${l}</button>`).join('');
+  document.getElementById('posTabTitle').textContent = tab==='all'?'Todas las posiciones':CATS[tab]?.label;
+
+  const pos = getPositions().filter(p=>tab==='all'||p.cat===tab).sort((a,b)=>b.val-a.val);
+  document.getElementById('posTbody').innerHTML = pos.map(p=>{
+    const s=p.gp>=0;
+    const qStatus = !p.ticker ? 'manual' : (p.quoteSource==='demo' ? 'demo' : 'live');
+    return `<tr>
+      <td>${p.ticker?`<span class="ticker-badge">${p.ticker}</span>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
+      <td><strong style="font-size:12px">${p.name}</strong></td>
+      <td><span class="tag">${CATS[p.cat]?.label||p.cat}</span></td>
+      <td class="mono">${fn(p.qty)}</td>
+      <td class="mono">${fe(p.avgBuy)}</td>
+      <td class="mono">${fe(p.cost)}</td>
+      <td class="mono">${qStatus==='live'?`<span class="quote-fresh">${fe(p.curPrice)}</span>`:qStatus==='demo'?`<span class="quote-stale">${fe(p.curPrice)} ◎</span>`:`<span class="quote-manual">${fe(p.curPrice)}</span>`}</td>
+      <td class="mono" style="font-weight:600">${fe(p.val)}</td>
+      <td class="mono ${s?'pos-val':'neg-val'}">${s?'+':''}${fe(p.gp)}</td>
+      <td><span class="badge ${s?'pos':'neg'}">${fp(p.pct)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderQuotes(){
+  const tickers = [...new Set(state.operations.map(o=>o.ticker).filter(Boolean))];
+  const rows = state.operations.reduce((acc, op)=>{
+    const key = op.ticker||('__'+op.name);
+    if (!acc[key]) acc[key]={ticker:op.ticker, name:op.name, cat:op.cat};
+    return acc;
+  }, {});
+  document.getElementById('quotesTbody').innerHTML = Object.values(rows).map(r=>{
+    const q = r.ticker ? state.quotes[r.ticker] : null;
+    const src = !r.ticker ? 'manual' : (q?.source||'sin datos');
+    const st = !r.ticker ? '<span class="quote-manual">● Manual</span>'
+             : !q ? '<span class="quote-err">✗ Sin datos</span>'
+             : q.source==='demo' ? '<span class="quote-stale">◎ Demo</span>'
+             : '<span class="quote-fresh">✓ Live</span>';
+    return `<tr>
+      <td>${r.ticker?`<span class="ticker-badge">${r.ticker}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${r.name}</td>
+      <td><span class="tag">${CATS[r.cat]?.label||r.cat}</span></td>
+      <td class="mono">${q?fe(q.priceEur):'—'}</td>
+      <td class="mono" style="font-size:11px;color:var(--muted)">${q?.date||'—'}</td>
+      <td>${st}</td>
+      <td style="font-size:11px;color:var(--muted)">${src}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderOps(){
+  document.getElementById('opsTbody').innerHTML = [...state.operations].reverse().map(o=>{
+    const s=['COMPRA','INGRESO'].includes(o.type);
+    const total = o.qty * o.price + (o.fees||0);
+    return `<tr>
+      <td class="mono">${o.date}</td>
+      <td>${o.ticker?`<span class="ticker-badge">${o.ticker}</span>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
+      <td style="font-size:12px">${o.name}</td>
+      <td><span class="tag">${CATS[o.cat]?.label||o.cat}</span></td>
+      <td><span class="badge ${s?'neu':'neg'}">${o.type}</span></td>
+      <td class="mono">${fn(o.qty)}</td>
+      <td class="mono">${fe(o.price)}</td>
+      <td class="mono" style="font-weight:600">${fe(total)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCharts(){
+  const catKeys = Object.keys(CATS);
+  const ct = getCatTotals();
+  const cats = catKeys.map(k=>({...ct[k], key:k, label:CATS[k].label, color:CATS[k].color}));
+
+  if(charts.bar) charts.bar.destroy();
+  charts.bar = new Chart(document.getElementById('barChart'),{
+    type:'bar',
+    data:{labels:cats.map(c=>c.label), datasets:[{label:'Rentabilidad %',
+      data:cats.map(c=>+(c.pct*100).toFixed(2)),
+      backgroundColor:cats.map(c=>c.gp>=0?'rgba(0,229,160,.7)':'rgba(244,63,94,.7)'),borderRadius:6}]},
+    options:{plugins:{legend:{display:false}},scales:{
+      y:{ticks:{callback:v=>v+'%',color:'#647fa3'},grid:{color:'rgba(30,48,80,.4)'}},
+      x:{ticks:{color:'#647fa3',font:{size:10}},grid:{display:false}}},animation:{duration:500}}
+  });
+
+  if(charts.grouped) charts.grouped.destroy();
+  charts.grouped = new Chart(document.getElementById('groupedBar'),{
+    type:'bar',
+    data:{labels:cats.map(c=>c.label), datasets:[
+      {label:'Coste total',   data:cats.map(c=>+c.cost.toFixed(2)), backgroundColor:'rgba(59,130,246,.5)', borderRadius:4},
+      {label:'Valor actual',  data:cats.map(c=>+c.val.toFixed(2)),  backgroundColor:'rgba(0,229,160,.7)',  borderRadius:4},
+    ]},
+    options:{plugins:{legend:{labels:{color:'#647fa3'}}},scales:{
+      y:{ticks:{callback:v=>'€'+v.toLocaleString(),color:'#647fa3'},grid:{color:'rgba(30,48,80,.4)'}},
+      x:{ticks:{color:'#647fa3',font:{size:10}},grid:{display:false}}},animation:{duration:500}}
+  });
+}
+
+// ── HISTORY STATE ──
+let histMetric = 'val';
+let hiddenCats = new Set();
+
+function setHistMetric(metric, btn){
+  histMetric = metric;
+  document.querySelectorAll('.hist-metric-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistCharts();
+}
+
+function toggleHistCat(cat, btn){
+  if(hiddenCats.has(cat)) hiddenCats.delete(cat);
+  else hiddenCats.add(cat);
+  btn.classList.toggle('active');
+  btn.classList.toggle('dimmed');
+  renderHistCharts();
+}
+
+// Build a { date -> { cat -> {val,cost,gp,pct} } } map from snapshots
+function buildHistData(){
+  const byDate = {};
+  state.snapshots.forEach(s => {
+    if (!byDate[s.date]) byDate[s.date] = {};
+    const cat = s.cat;
+    if (!byDate[s.date][cat]) byDate[s.date][cat] = {val:0, cost:0, gp:0, total:0};
+    byDate[s.date][cat].val  += s.val;
+    byDate[s.date][cat].cost += s.cost;
+    byDate[s.date][cat].gp  += s.gp;
+    byDate[s.date][cat].total = s.totalPortfolio;
+  });
+  // Compute pct per cat per date
+  Object.values(byDate).forEach(d => {
+    Object.values(d).forEach(c => { c.pct = c.cost ? c.gp/c.cost : 0; });
+  });
+  return byDate;
+}
+
+function seedDemoSnapshots(){
+  // Generate 8 weeks of fake snapshots for demo purposes
+  state.snapshots = [];
+  const bases = {
+    'Acciones/ETFs': [10200,11400,12100,13800,14200,15100,16300,17200],
+    'Fondos':        [17000,17200,17600,17400,18100,18500,18200,19000],
+    'Cripto':        [9000, 10200,8800, 11000,12500,11200,13400,14100],
+    'Renta Fija':    [10100,10150,10200,10250,10300,10300,10320,10350],
+    'Trasteros':     [10800,10800,11000,11000,11000,11200,11200,11500],
+    'Cash':          [20000,19500,19800,18900,19200,20100,19800,20000],
+  };
+  const today = new Date();
+  for(let w=7; w>=0; w--){
+    const d = new Date(today);
+    d.setDate(d.getDate() - w*7 - d.getDay()); // last sunday
+    const dateStr = d.toISOString().split('T')[0];
+    const week = getWeekNumber(d);
+    const idx = 7-w;
+    let totalPortfolio = 0;
+    Object.keys(bases).forEach(cat => totalPortfolio += bases[cat][idx]);
+    Object.keys(bases).forEach(cat => {
+      const val = bases[cat][idx];
+      const cost = bases[cat][0] * 0.9;
+      state.snapshots.push({
+        date:dateStr, week, manual:false,
+        ticker:'—', name:cat, cat,
+        qty:1, price:val, cost, val, gp:val-cost, pct:(val-cost)/cost,
+        totalPortfolio,
+      });
+    });
+  }
+  save();
+  renderHistory();
+  showToast('🎲 8 semanas de datos demo generados','pos');
+}
+
+function renderHistory(){
+  document.getElementById('nextSnapshotLabel').textContent =
+    `Próximo snapshot automático: ${getNextSunday()} (domingo) · Hoy: ${new Date().toLocaleDateString('es-ES')}`;
+
+  const count = [...new Set(state.snapshots.map(s=>s.date))].length;
+  document.getElementById('snapshotCount').textContent = count + ' snapshots';
+  if(document.getElementById('snapshotCountConfig'))
+    document.getElementById('snapshotCountConfig').textContent = count;
+
+  if(count === 0){
+    ['histKpis','histTbody'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
+    document.getElementById('histKpis').innerHTML=`
+      <div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted);font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:13px">
+        📸 Sin snapshots todavía. Haz clic en <strong style="color:var(--text)">Demo datos</strong> para ver el histórico de ejemplo, o toma el primer snapshot manual.
+      </div>`;
+    renderHistCharts();
+    return;
+  }
+
+  renderHistKpis();
+  renderCatToggleButtons();
+  renderHistCharts();
+  renderHistTable();
+}
+
+function renderHistKpis(){
+  const byDate = buildHistData();
+  const dates = Object.keys(byDate).sort();
+  if(dates.length < 2){ document.getElementById('histKpis').innerHTML=''; return; }
+  const last = byDate[dates[dates.length-1]];
+  const prev = byDate[dates[dates.length-2]];
+  const lastTotal = Object.values(last).reduce((s,c)=>s+c.val,0);
+  const prevTotal = Object.values(prev).reduce((s,c)=>s+c.val,0);
+  const deltaVal = lastTotal - prevTotal;
+  const deltaPct = prevTotal ? deltaVal/prevTotal : 0;
+
+  const catKeys = Object.keys(CATS);
+  const kpis = [
+    {label:'Portfolio total', val:lastTotal, delta:deltaVal, pct:deltaPct, icon:'🏆', clr:'rgba(0,229,160,.06)'},
+    ...catKeys.filter(k=>last[k]).map(k=>({
+      label: CATS[k].label,
+      val: last[k]?.val||0,
+      delta: (last[k]?.val||0) - (prev[k]?.val||0),
+      pct: prev[k]?.val ? ((last[k]?.val||0)-(prev[k]?.val||0))/(prev[k]?.val||0) : 0,
+      icon:'', clr:`rgba(${hexToRgb(CATS[k].color)},.05)`
+    }))
+  ].slice(0,4);
+
+  document.getElementById('histKpis').innerHTML = kpis.map(k=>{
+    const s=k.delta>=0;
+    return `<div class="kpi" style="--kpi-clr:${k.clr}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="font-size:18px">${fe(k.val)}</div>
+      <div class="kpi-sub">
+        <span class="badge ${s?'pos':'neg'}">${s?'+':''}${fe(k.delta)}</span>
+        <span class="badge ${s?'pos':'neg'}" style="margin-left:2px">${fp(k.pct)}</span>
+        <span style="font-size:10px;margin-left:4px">vs sem. ant.</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+function renderCatToggleButtons(){
+  const catKeys = Object.keys(CATS);
+  const existing = document.getElementById('catToggleBtns').children.length;
+  if(existing === catKeys.length) return; // already built
+  document.getElementById('catToggleBtns').innerHTML = catKeys.map(k=>`
+    <button class="btn btn-ghost hist-cat-btn active" data-cat="${k}"
+      style="font-size:10px;padding:4px 10px;border-color:${CATS[k].color};color:${CATS[k].color}"
+      onclick="toggleHistCat('${k}',this)">${CATS[k].label}</button>
+  `).join('');
+}
+
+function renderHistCharts(){
+  const byDate = buildHistData();
+  const dates = Object.keys(byDate).sort();
+  const catKeys = Object.keys(CATS).filter(k=>!hiddenCats.has(k));
+  const labels = dates.map(d=>{ const dt=new Date(d+'T12:00:00'); return dt.toLocaleDateString('es-ES',{day:'numeric',month:'short'}); });
+
+  const metricFn = {
+    val: c=>+(c?.val||0).toFixed(2),
+    gp:  c=>+(c?.gp||0).toFixed(2),
+    pct: c=>+((c?.pct||0)*100).toFixed(2),
+  }[histMetric];
+
+  const metricFmt = histMetric==='pct'
+    ? v=>v.toFixed(2)+'%'
+    : v=>'€'+v.toLocaleString('es-ES',{maximumFractionDigits:0});
+
+  const axisCallback = histMetric==='pct'
+    ? v=>v+'%'
+    : v=>'€'+v.toLocaleString('es-ES',{maximumFractionDigits:0});
+
+  const chartDefaults = {
+    scales:{
+      y:{ticks:{callback:axisCallback,color:'#647fa3',font:{size:10}},grid:{color:'rgba(30,48,80,.4)'}},
+      x:{ticks:{color:'#647fa3',font:{size:10}},grid:{display:false}},
+    },
+    plugins:{legend:{labels:{color:'#647fa3',font:{size:11},boxWidth:12,padding:14}}},
+    animation:{duration:400},
+    interaction:{mode:'index',intersect:false},
+  };
+
+  // ── CHART 1: Total portfolio line ──
+  if(charts.histTotal) charts.histTotal.destroy();
+  const totals = dates.map(d=>{
+    const cats = byDate[d];
+    return +(Object.values(cats).reduce((s,c)=>{
+      if(histMetric==='pct') return s; // pct on total doesn't make sense simply
+      return s+(c?.[histMetric==='val'?'val':'gp']||0);
+    },0).toFixed(2));
+  });
+  // For pct: weighted average
+  const totalPcts = dates.map(d=>{
+    const cats = byDate[d];
+    const totalVal=Object.values(cats).reduce((s,c)=>s+(c?.val||0),0);
+    const totalCost=Object.values(cats).reduce((s,c)=>s+(c?.cost||0),0);
+    return +((totalCost?(totalVal-totalCost)/totalCost:0)*100).toFixed(2);
+  });
+  const totalData = histMetric==='pct' ? totalPcts : totals;
+
+  charts.histTotal = new Chart(document.getElementById('histTotalChart'),{
+    type:'line',
+    data:{labels, datasets:[{
+      label: histMetric==='val'?'Valor total (€)':histMetric==='gp'?'G/P total (€)':'Rentabilidad %',
+      data:totalData,
+      borderColor:'#00e5a0', backgroundColor:'rgba(0,229,160,.06)',
+      borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#00e5a0',
+      tension:.35, fill:true,
+    }]},
+    options:{...chartDefaults,
+      plugins:{...chartDefaults.plugins,
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${metricFmt(ctx.raw)}`}}
+      }
+    }
+  });
+
+  // ── CHART 2: Per-category lines ──
+  if(charts.histCat) charts.histCat.destroy();
+  const catDatasets = catKeys.map(k=>({
+    label: CATS[k].label,
+    data: dates.map(d=>metricFn(byDate[d]?.[k])),
+    borderColor: CATS[k].color,
+    backgroundColor: CATS[k].color+'18',
+    borderWidth:2, pointRadius:3, pointBackgroundColor:CATS[k].color,
+    tension:.35, fill:false,
+  }));
+
+  charts.histCat = new Chart(document.getElementById('histCatChart'),{
+    type:'line',
+    data:{labels, datasets:catDatasets},
+    options:{...chartDefaults,
+      plugins:{...chartDefaults.plugins,
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${metricFmt(ctx.raw)}`}}
+      }
+    }
+  });
+
+  // ── CHART 3: Stacked area (always value) ──
+  if(charts.histStacked) charts.histStacked.destroy();
+  const stackedDatasets = Object.keys(CATS).map(k=>({
+    label: CATS[k].label,
+    data: dates.map(d=>+((byDate[d]?.[k]?.val)||0).toFixed(2)),
+    borderColor: CATS[k].color,
+    backgroundColor: CATS[k].color+'55',
+    borderWidth:1.5, pointRadius:0,
+    tension:.35, fill:true,
+  }));
+
+  charts.histStacked = new Chart(document.getElementById('histStackedChart'),{
+    type:'line',
+    data:{labels, datasets:stackedDatasets},
+    options:{
+      ...chartDefaults,
+      scales:{
+        y:{stacked:true, ticks:{callback:v=>'€'+v.toLocaleString('es-ES',{maximumFractionDigits:0}),color:'#647fa3',font:{size:10}},grid:{color:'rgba(30,48,80,.4)'}},
+        x:{ticks:{color:'#647fa3',font:{size:10}},grid:{display:false}},
+      },
+      plugins:{...chartDefaults.plugins,
+        tooltip:{mode:'index',callbacks:{label:ctx=>`${ctx.dataset.label}: ${fe(ctx.raw)}`}}
+      },
+    }
+  });
+}
+
+function renderHistTable(){
+  const rows = state.snapshots.slice(-60).reverse();
+  document.getElementById('histTbody').innerHTML = rows.map(s=>{
+    const gs=s.gp>=0;
+    const catColor = CATS[s.cat]?.color||'#647fa3';
+    return `<tr>
+      <td class="mono" style="font-size:11px">${s.date}</td>
+      <td><span class="badge neu" style="font-size:10px">Sem. ${s.week}</span>${s.manual?' <span class="badge warn" style="font-size:10px">manual</span>':''}</td>
+      <td>
+        ${s.ticker&&s.ticker!=='—'?`<span class="ticker-badge">${s.ticker}</span> `:''}
+        <span style="font-size:11px;color:${catColor}">${CATS[s.cat]?.label||s.cat}</span>
+      </td>
+      <td class="mono">${fe(s.price)}</td>
+      <td class="mono" style="font-weight:600">${fe(s.val)}</td>
+      <td class="mono ${gs?'pos-val':'neg-val'}">${gs?'+':''}${fe(s.gp)}</td>
+      <td class="mono" style="font-weight:600;color:var(--accent)">${fe(s.totalPortfolio)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">Sin snapshots todavía</td></tr>';
+}
+
+// ════════════════════════════════════════════════════════
+// OPERATIONS CRUD
+// ════════════════════════════════════════════════════════
+function openOpModal(){
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('opModal').classList.add('open');
+}
+function closeOpModal(){ document.getElementById('opModal').classList.remove('open'); }
+
+function saveOperation(){
+  const cat    = document.getElementById('f-cat').value;
+  const ticker = document.getElementById('f-ticker').value.trim().toUpperCase();
+  const name   = document.getElementById('f-name').value.trim();
+  const type   = document.getElementById('f-type').value;
+  const date   = document.getElementById('f-date').value;
+  const qty    = parseFloat(document.getElementById('f-qty').value)||0;
+  const price  = parseFloat(document.getElementById('f-price').value)||0;
+  const fees   = parseFloat(document.getElementById('f-fees').value)||0;
+  const broker = document.getElementById('f-broker').value.trim();
+  const notes  = document.getElementById('f-notes').value.trim();
+
+  if (!name||!qty||!price) { showToast('Rellena: nombre, cantidad y precio','warn'); return; }
+
+  state.operations.push({date,ticker,name,cat,type,broker,qty,price,fees,notes});
+  save();
+  closeOpModal();
+  renderAll();
+  showToast(`✅ ${type} registrada: ${name}`,'pos');
+
+  // If ticker is new and we have a key, fetch its quote
+  if (ticker && state.avKey && !state.quotes[ticker]) {
+    fetchQuote(ticker).then(q=>{ if(q){state.quotes[ticker]=q;save();renderAll();} });
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════
+function saveAvKey(){
+  const k = document.getElementById('avKey').value.trim();
+  if (!k) { showToast('Introduce una API key','warn'); return; }
+  state.avKey = k;
+  localStorage.setItem('av_key', k);
+  document.getElementById('avStatus').innerHTML = '<span style="color:var(--accent)">✅ API Key guardada. Ahora puedes actualizar cotizaciones.</span>';
+  showToast('✅ Alpha Vantage API Key guardada','pos');
+}
+
+// ════════════════════════════════════════════════════════
+// CONFIG — Alpha Vantage
+// ════════════════════════════════════════════════════════
+function saveAvKey(){
+  const k = document.getElementById('avKey').value.trim();
+  if (!k) { showToast('Introduce una API key','warn'); return; }
+  state.avKey = k;
+  localStorage.setItem('av_key', k);
+  document.getElementById('avStatus').innerHTML = '<span style="color:var(--accent)">✅ API Key guardada.</span>';
+  showToast('✅ Alpha Vantage API Key guardada','pos');
+}
+
+// ════════════════════════════════════════════════════════
+// GOOGLE SHEETS INTEGRATION
+// ════════════════════════════════════════════════════════
+const GSCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+const GAPI_DISCOVERY = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+
+let gTokenClient = null;
+let gAccessToken  = null;
+let gApiReady     = false;
+let gTokenReady   = false;
+
+// Sheet name → range map
+const SHEET_RANGES = {
+  operaciones: 'Operaciones!B4:L200',
+  cotizaciones: 'Cotizaciones!B4:L50',
+  historico:   'Histórico!B4:N2000',
+};
+
+// Column order in each sheet (0-indexed, matches the Excel layout)
+const OP_COLS   = ['fecha','ticker','nombre','cat','tipo','broker','qty','precio','fees','total','notas'];
+const HIST_COLS = ['fecha','semana','manual','ticker','nombre','cat','qty','precio','cost','val','gp','pct','totalPortfolio'];
+
+function saveGClientId(){
+  const id = document.getElementById('gClientId').value.trim();
+  if (!id) { showToast('Introduce el Client ID','warn'); return; }
+  state.gClientId = id;
+  localStorage.setItem('g_client_id', id);
+  showToast('✅ Client ID guardado','pos');
+  initGoogleAuth();
+}
+
+function saveGSheetId(){
+  const id = document.getElementById('gSheetId').value.trim();
+  if (!id) { showToast('Introduce el Spreadsheet ID','warn'); return; }
+  state.gSheetId = id;
+  localStorage.setItem('g_sheet_id', id);
+  showToast('✅ Spreadsheet ID guardado','pos');
+}
+
+// Load Google API scripts dynamically
+function loadGoogleScripts(){
+  if (document.getElementById('gapiScript')) return;
+  const s1 = document.createElement('script');
+  s1.id = 'gapiScript';
+  s1.src = 'https://apis.google.com/js/api.js';
+  s1.onload = () => {
+    gapi.load('client', async () => {
+      await gapi.client.init({discoveryDocs:[GAPI_DISCOVERY]});
+      gApiReady = true;
+      if (gTokenReady) onGoogleReady();
+    });
+  };
+  document.head.appendChild(s1);
+
+  const s2 = document.createElement('script');
+  s2.src = 'https://accounts.google.com/gsi/client';
+  s2.onload = () => {
+    if (!state.gClientId) return;
+    initGoogleAuth();
+  };
+  document.head.appendChild(s2);
+}
+
+function initGoogleAuth(){
+  if (!state.gClientId || typeof google === 'undefined') return;
+  gTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: state.gClientId,
+    scope: GSCOPES,
+    callback: (resp) => {
+      if (resp.error) { showToast('❌ Error de autenticación: ' + resp.error, 'neg'); return; }
+      gAccessToken = resp.access_token;
+      gTokenReady = true;
+      if (gApiReady) onGoogleReady();
+      else { gTokenReady = true; }
+      setGConnected(true);
+      showToast('✅ Conectado a Google Sheets','pos');
+      if (state.gSheetId) readFromSheets();
+    },
+  });
+  gTokenReady = true;
+}
+
+function onGoogleReady(){
+  if (gAccessToken) gapi.client.setToken({access_token: gAccessToken});
+}
+
+function googleSignIn(){
+  if (!state.gClientId) {
+    showToast('⚠️ Guarda primero el Client ID de Google','warn');
+    return;
+  }
+  loadGoogleScripts();
+  // Slight delay to ensure scripts loaded
+  setTimeout(() => {
+    if (gTokenClient) {
+      gTokenClient.requestAccessToken({prompt: gAccessToken ? '' : 'consent'});
+    } else {
+      initGoogleAuth();
+      setTimeout(() => gTokenClient?.requestAccessToken({prompt:'consent'}), 800);
+    }
+  }, 400);
+}
+
+function googleSignOut(){
+  if (gAccessToken) {
+    google.accounts.oauth2.revoke(gAccessToken, () => {});
+    gAccessToken = null;
+  }
+  setGConnected(false);
+  showToast('🔌 Desconectado de Google','warn');
+}
+
+function setGConnected(connected){
+  const dot  = document.getElementById('gStatusDot');
+  const txt  = document.getElementById('gStatusText');
+  const badge= document.getElementById('gAuthBadge');
+  const conn = document.getElementById('gConnectBtn');
+  const disc = document.getElementById('gDisconnectBtn');
+  const sync = document.getElementById('gSyncBtn');
+  const read = document.getElementById('gReadBtn');
+
+  if (connected) {
+    dot.style.background  = 'var(--accent)';
+    txt.textContent       = 'Google Sheets';
+    badge.textContent     = '● Conectado';
+    badge.className       = 'badge pos';
+    conn.style.display    = 'none';
+    disc.style.display    = '';
+    sync.style.display    = '';
+    read.style.display    = '';
+  } else {
+    dot.style.background  = 'var(--muted)';
+    txt.textContent       = 'Google Sheets';
+    badge.textContent     = '● No conectado';
+    badge.className       = 'badge warn';
+    conn.style.display    = '';
+    disc.style.display    = 'none';
+    sync.style.display    = 'none';
+    read.style.display    = 'none';
+  }
+}
+
+// ── READ: load operations + history from Sheets ──
+async function readFromSheets(){
+  if (!gAccessToken || !state.gSheetId) {
+    showToast('⚠️ Conecta Google y añade el Spreadsheet ID primero','warn'); return;
+  }
+  setGStatus('📥 Cargando datos desde Google Sheets…');
+  try {
+    gapi.client.setToken({access_token: gAccessToken});
+
+    // Read Operaciones
+    const opsResp = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: state.gSheetId,
+      range: SHEET_RANGES.operaciones,
+    });
+    const opsRows = opsResp.result.values || [];
+    if (opsRows.length > 1) { // skip header
+      state.operations = opsRows.filter(r=>r[0]).map(r => ({
+        date:   r[0]||'', ticker: (r[1]||'').toUpperCase(), name:   r[2]||'',
+        cat:    r[3]||'', type:   r[4]||'COMPRA',           broker: r[5]||'',
+        qty:    parseFloat(r[6])||0, price: parseFloat(r[7])||0, fees: parseFloat(r[8])||0,
+        notes:  r[10]||'',
+      }));
+    }
+
+    // Read Histórico
+    const histResp = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: state.gSheetId,
+      range: SHEET_RANGES.historico,
+    });
+    const histRows = histResp.result.values || [];
+    if (histRows.length > 1) {
+      state.snapshots = histRows.filter(r=>r[0]).map(r => ({
+        date:  r[0]||'', week: parseInt(r[1])||0, manual: r[2]==='true',
+        ticker:r[3]||'', name: r[4]||'', cat:  r[5]||'',
+        qty:   parseFloat(r[6])||0, price: parseFloat(r[7])||0,
+        cost:  parseFloat(r[8])||0, val:   parseFloat(r[9])||0,
+        gp:    parseFloat(r[10])||0, pct:  parseFloat(r[11])||0,
+        totalPortfolio: parseFloat(r[12])||0,
+      }));
+    }
+
+    save();
+    renderAll();
+    const now = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    setGStatus(`✅ Datos cargados · ${state.operations.length} operaciones · ${state.snapshots.length} snapshots · ${now}`);
+    document.getElementById('lastSyncLabel').textContent = 'Sheets: ' + now;
+    showToast(`✅ Cargado desde Google Sheets: ${state.operations.length} operaciones`,'pos');
+  } catch(e) {
+    setGStatus('❌ Error al leer: ' + (e.result?.error?.message || e.message || e));
+    showToast('❌ Error al leer Google Sheets','neg');
+  }
+}
+
+// ── WRITE: push operations + snapshots to Sheets ──
+async function syncWithSheets(){
+  if (!gAccessToken || !state.gSheetId) {
+    showToast('⚠️ Conecta Google y añade el Spreadsheet ID primero','warn'); return;
+  }
+  setGStatus('📤 Sincronizando con Google Sheets…');
+  try {
+    gapi.client.setToken({access_token: gAccessToken});
+
+    // Write Operaciones
+    const opsValues = [
+      ['FECHA','TICKER','NOMBRE','CATEGORÍA','OPERACIÓN','BROKER','CANTIDAD','PRECIO','COMISIONES','TOTAL','NOTAS'],
+      ...state.operations.map(o=>[
+        o.date, o.ticker||'', o.name, o.cat, o.type, o.broker||'',
+        o.qty, o.price, o.fees||0, (o.qty*o.price+(o.fees||0)).toFixed(2), o.notes||'',
+      ])
+    ];
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: state.gSheetId,
+      range: 'Operaciones!B3',
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: opsValues },
+    });
+
+    // Write Histórico
+    const histValues = [
+      ['FECHA','SEMANA','MANUAL','TICKER','NOMBRE','CATEGORÍA','CANTIDAD','PRECIO','COSTE','VALOR','G/P','RENTAB','TOTAL PORTFOLIO'],
+      ...state.snapshots.map(s=>[
+        s.date, s.week, s.manual?'true':'false',
+        s.ticker||'', s.name, s.cat,
+        s.qty.toFixed(6), s.price.toFixed(4), s.cost.toFixed(2),
+        s.val.toFixed(2), s.gp.toFixed(2), s.pct.toFixed(6),
+        s.totalPortfolio.toFixed(2),
+      ])
+    ];
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: state.gSheetId,
+      range: 'Histórico!B3',
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: histValues },
+    });
+
+    // Write Cotizaciones (current prices)
+    const cotValues = [
+      ['TICKER','NOMBRE','CATEGORÍA','MONEDA','ÚLTIMO PRECIO','FECHA','PRECIO EN €','FUENTE'],
+      ...Object.entries(state.quotes).map(([tk,q])=>[
+        tk, '', '', 'EUR', q.price||q.priceEur, q.date||'', q.priceEur, q.source||'',
+      ])
+    ];
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: state.gSheetId,
+      range: 'Cotizaciones!B3',
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: cotValues },
+    });
+
+    const now = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    state.lastRefresh = new Date().toISOString();
+    save();
+    setGStatus(`✅ Sincronizado con Google Sheets · ${now}`);
+    document.getElementById('lastSyncLabel').textContent = 'Sync: ' + now;
+    showToast('✅ Google Sheets actualizado correctamente','pos');
+  } catch(e) {
+    setGStatus('❌ Error al escribir: ' + (e.result?.error?.message || e.message || e));
+    showToast('❌ Error al escribir en Google Sheets','neg');
+  }
+}
+
+function setGStatus(msg){
+  const el = document.getElementById('gSyncStatus');
+  if (el) el.textContent = msg;
+}
+
+// Auto-sync to Sheets after snapshot
+const _origTakeSnapshot = takeSnapshot;
+takeSnapshot = function(dateStr, manual=false){
+  _origTakeSnapshot(dateStr, manual);
+  if (gAccessToken && state.gSheetId) {
+    setTimeout(()=>syncWithSheets(), 800);
+  }
+};
+
+// ════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════
+function showSection(id, el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'Dashboard',positions:'Posiciones',ops:'Operaciones',
+    quotes:'Cotizaciones',charts:'Gráficos',history:'Histórico semanal',config:'Configuración'};
+  document.getElementById('pageTitle').textContent = titles[id]||id;
+  closeSidebar();
+  if(id==='positions') renderPositions('all');
+  if(id==='quotes') renderQuotes();
+  if(id==='ops') renderOps();
+  if(id==='charts') setTimeout(renderCharts,60);
+  if(id==='history') setTimeout(renderHistory,60);
+  if(id==='config') {
+    document.getElementById('avKey').value=state.avKey||'';
+    document.getElementById('gClientId').value=state.gClientId||'';
+    document.getElementById('gSheetId').value=state.gSheetId||'';
+  }
+}
+
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('mobileOverlay').classList.toggle('open'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('mobileOverlay').classList.remove('open'); }
+
+// ════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════
+function showToast(msg, type='pos'){
+  const colors={pos:'var(--accent)',neg:'var(--red)',warn:'var(--yellow)',neu:'var(--accent2)'};
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid ${colors[type]||colors.pos};
+    color:var(--text);padding:12px 18px;border-radius:10px;font-size:13px;z-index:999;
+    box-shadow:0 8px 32px rgba(0,0,0,.5);max-width:360px;line-height:1.4`;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  if(state.avKey) document.getElementById('avKey').value=state.avKey;
+  if(state.gClientId) document.getElementById('gClientId').value=state.gClientId;
+  if(state.gSheetId)  document.getElementById('gSheetId').value=state.gSheetId;
+  renderDashboard();
+  document.getElementById('opModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeOpModal();});
+  checkAndTakeSnapshot();
+  // Pre-load Google scripts if client ID is already configured
+  if(state.gClientId) loadGoogleScripts();
+  setGConnected(false);
+});
+</script>
+</body>
+</html>
