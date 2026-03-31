@@ -128,7 +128,12 @@ select option{background:var(--card)}
 /* snapshot indicator */
 .snapshot-badge{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:10px;margin-bottom:18px}
 
-.hist-metric-btn.active{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:7px;border:none;cursor:pointer;font-size:13px;transition:.15s;background:transparent}
+.btn-edit{color:var(--accent2);background:rgba(59,130,246,.1)}
+.btn-edit:hover{background:rgba(59,130,246,.22)}
+.btn-del{color:var(--red);background:rgba(244,63,94,.1)}
+.btn-del:hover{background:rgba(244,63,94,.22)}
+.modal-subtitle{font-size:11px;color:var(--muted);font-weight:500;margin-top:-12px;margin-bottom:16px}
 .hist-cat-btn.dimmed{opacity:.35}
 .hist-cat-btn{font-size:10px!important;padding:4px 9px!important}
 
@@ -265,7 +270,7 @@ select option{background:var(--card)}
       <button class="btn btn-primary" onclick="openOpModal()">+ Nueva operación</button>
     </div>
     <table>
-      <thead><tr><th>Fecha</th><th>Ticker</th><th>Nombre</th><th>Categoría</th><th>Tipo</th><th>Cantidad</th><th>Precio</th><th>Total</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Ticker</th><th>Nombre</th><th>Categoría</th><th>Tipo</th><th>Cantidad</th><th>Precio</th><th>Total</th><th style="width:80px">Acciones</th></tr></thead>
       <tbody id="opsTbody"></tbody>
     </table>
   </div>
@@ -504,9 +509,10 @@ select option{background:var(--card)}
 <div class="overlay" id="opModal">
   <div class="modal">
     <div class="modal-title">
-      <span>➕ Registrar operación</span>
+      <span id="modalTitleText">➕ Registrar operación</span>
       <button class="close-btn" onclick="closeOpModal()">✕</button>
     </div>
+    <div class="modal-subtitle" id="modalSubtitle" style="display:none"></div>
     <div class="form-grid">
       <div class="form-group full">
         <label>Categoría</label>
@@ -559,7 +565,7 @@ select option{background:var(--card)}
     </div>
     <div style="display:flex;gap:8px;margin-top:18px">
       <button class="btn btn-ghost" onclick="closeOpModal()" style="flex:1">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveOperation()" style="flex:2">💾 Guardar operación</button>
+      <button class="btn btn-primary" id="modalSaveBtn" onclick="saveOperation()" style="flex:2">💾 Guardar operación</button>
     </div>
   </div>
 </div>
@@ -964,11 +970,12 @@ function renderQuotes(){
 }
 
 function renderOps(){
-  document.getElementById('opsTbody').innerHTML = [...state.operations].reverse().map(o=>{
+  const ops = [...state.operations].map((o,i)=>({...o, _idx: state.operations.length-1-i})).reverse();
+  document.getElementById('opsTbody').innerHTML = ops.map(o=>{
     const s=['COMPRA','INGRESO'].includes(o.type);
     const total = o.qty * o.price + (o.fees||0);
     return `<tr>
-      <td class="mono">${o.date}</td>
+      <td class="mono" style="font-size:11px">${o.date}</td>
       <td>${o.ticker?`<span class="ticker-badge">${o.ticker}</span>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
       <td style="font-size:12px">${o.name}</td>
       <td><span class="tag">${CATS[o.cat]?.label||o.cat}</span></td>
@@ -976,6 +983,10 @@ function renderOps(){
       <td class="mono">${fn(o.qty)}</td>
       <td class="mono">${fe(o.price)}</td>
       <td class="mono" style="font-weight:600">${fe(total)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-icon btn-edit" title="Editar" onclick="editOp(${o._idx})">✏️</button>
+        <button class="btn-icon btn-del"  title="Eliminar" onclick="deleteOp(${o._idx})">🗑️</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -1296,11 +1307,65 @@ function renderHistTable(){
 // ════════════════════════════════════════════════════════
 // OPERATIONS CRUD
 // ════════════════════════════════════════════════════════
-function openOpModal(){
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+let _editIdx = null; // null = new, number = editing index
+
+function openOpModal(idx=null){
+  _editIdx = idx;
+  const isEdit = idx !== null;
+  document.getElementById('modalTitleText').textContent = isEdit ? '✏️ Editar operación' : '➕ Registrar operación';
+  document.getElementById('modalSaveBtn').textContent   = isEdit ? '💾 Guardar cambios' : '💾 Guardar operación';
+
+  const sub = document.getElementById('modalSubtitle');
+  if(isEdit){
+    const o = state.operations[idx];
+    sub.textContent = `Editando: ${o.name} · ${o.date}`;
+    sub.style.display = '';
+    // Populate fields
+    document.getElementById('f-cat').value    = o.cat;
+    document.getElementById('f-ticker').value = o.ticker||'';
+    document.getElementById('f-name').value   = o.name;
+    document.getElementById('f-type').value   = o.type;
+    document.getElementById('f-date').value   = o.date;
+    document.getElementById('f-qty').value    = o.qty;
+    document.getElementById('f-price').value  = o.price;
+    document.getElementById('f-fees').value   = o.fees||0;
+    document.getElementById('f-broker').value = o.broker||'';
+    document.getElementById('f-notes').value  = o.notes||'';
+  } else {
+    sub.style.display = 'none';
+    // Clear fields
+    document.getElementById('f-cat').value    = 'Acciones/ETFs';
+    document.getElementById('f-ticker').value = '';
+    document.getElementById('f-name').value   = '';
+    document.getElementById('f-type').value   = 'COMPRA';
+    document.getElementById('f-date').value   = new Date().toISOString().split('T')[0];
+    document.getElementById('f-qty').value    = '';
+    document.getElementById('f-price').value  = '';
+    document.getElementById('f-fees').value   = '0';
+    document.getElementById('f-broker').value = '';
+    document.getElementById('f-notes').value  = '';
+  }
   document.getElementById('opModal').classList.add('open');
 }
-function closeOpModal(){ document.getElementById('opModal').classList.remove('open'); }
+
+function editOp(idx){
+  openOpModal(idx);
+}
+
+function deleteOp(idx){
+  const o = state.operations[idx];
+  if (!confirm(`¿Eliminar esta operación?\n\n${o.date} · ${o.type} · ${o.name} · ${fn(o.qty)} × ${fe(o.price)}`)) return;
+  state.operations.splice(idx, 1);
+  save();
+  renderAll();
+  showToast(`🗑️ Operación eliminada: ${o.name}`,'warn');
+  if(gAccessToken && state.gSheetId) setTimeout(()=>syncWithSheets(), 600);
+}
+
+function closeOpModal(){
+  document.getElementById('opModal').classList.remove('open');
+  _editIdx = null;
+}
 
 function saveOperation(){
   const cat    = document.getElementById('f-cat').value;
@@ -1316,28 +1381,24 @@ function saveOperation(){
 
   if (!name||!qty||!price) { showToast('Rellena: nombre, cantidad y precio','warn'); return; }
 
-  state.operations.push({date,ticker,name,cat,type,broker,qty,price,fees,notes});
+  const op = {date, ticker, name, cat, type, broker, qty, price, fees, notes};
+
+  if (_editIdx !== null) {
+    state.operations[_editIdx] = op;
+    showToast(`✅ Operación actualizada: ${name}`,'pos');
+  } else {
+    state.operations.push(op);
+    showToast(`✅ ${type} registrada: ${name}`,'pos');
+    // If ticker is new and we have a key, fetch its quote
+    if (ticker && state.avKey && !state.quotes[ticker]) {
+      fetchQuote(ticker).then(q=>{ if(q){state.quotes[ticker]=q;save();renderAll();} });
+    }
+  }
+
   save();
   closeOpModal();
   renderAll();
-  showToast(`✅ ${type} registrada: ${name}`,'pos');
-
-  // If ticker is new and we have a key, fetch its quote
-  if (ticker && state.avKey && !state.quotes[ticker]) {
-    fetchQuote(ticker).then(q=>{ if(q){state.quotes[ticker]=q;save();renderAll();} });
-  }
-}
-
-// ════════════════════════════════════════════════════════
-// CONFIG
-// ════════════════════════════════════════════════════════
-function saveAvKey(){
-  const k = document.getElementById('avKey').value.trim();
-  if (!k) { showToast('Introduce una API key','warn'); return; }
-  state.avKey = k;
-  localStorage.setItem('av_key', k);
-  document.getElementById('avStatus').innerHTML = '<span style="color:var(--accent)">✅ API Key guardada. Ahora puedes actualizar cotizaciones.</span>';
-  showToast('✅ Alpha Vantage API Key guardada','pos');
+  if(gAccessToken && state.gSheetId) setTimeout(()=>syncWithSheets(), 600);
 }
 
 // ════════════════════════════════════════════════════════
