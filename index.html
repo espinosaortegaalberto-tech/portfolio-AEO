@@ -970,7 +970,8 @@ function renderQuotes(){
 }
 
 function renderOps(){
-  const ops = [...state.operations].map((o,i)=>({...o, _idx: state.operations.length-1-i})).reverse();
+  // Mostramos en orden inverso (más reciente primero) pero mantenemos el índice real en state.operations
+  const ops = state.operations.map((o,i)=>({...o, _idx:i})).reverse();
   document.getElementById('opsTbody').innerHTML = ops.map(o=>{
     const s=['COMPRA','INGRESO'].includes(o.type);
     const total = o.qty * o.price + (o.fees||0);
