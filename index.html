@@ -724,18 +724,14 @@ function getPositions(){
       return {...p, qty:1, avgBuy:cost, curPrice:val, val, cost, gp, pct, quoteDate:null, quoteSource:'manual'};
     }
 
-    // ── TRASTEROS: rentabilidad = (ingresos / aportaciones - 1) ──
+    // ── TRASTEROS: coste=COMPRAS, val=INGRESOS, gp=val-coste, pct=val/coste-1 ──
     if (p.cat === 'Trasteros') {
-      const cost    = p.aportaciones;
-      // Valor actual = aportaciones + ingresos acumulados (el dinero ya generado)
-      // El valor "vivo" del trastero sigue siendo la inversión original hasta que se venda
-      const val     = cost; // valor contable = lo invertido (sin revalorización automática)
-      const ingresos= p.ingresos;
-      const gp      = ingresos;                          // ganancia = ingresos recibidos
-      const pct     = cost ? (ingresos / cost) : 0;      // (ingresos / aportaciones - 1) + 1 simplificado
-      return {...p, avgBuy:cost, curPrice:cost, val, cost, gp, pct,
-               ingresos, quoteDate:null, quoteSource:'manual',
-               extraLabel:`Ingresos recibidos: ${fe(ingresos)}`};
+      const cost = p.aportaciones;   // suma de COMPRAs
+      const val  = p.ingresos;       // suma de INGRESOs
+      const gp   = val - cost;
+      const pct  = cost ? (val / cost) - 1 : 0;
+      return {...p, avgBuy:0, curPrice:0, val, cost, gp, pct,
+               ingresos:val, quoteDate:null, quoteSource:'manual'};
     }
 
     // ── ESTÁNDAR (acciones, cripto, etc.) ──
@@ -1094,21 +1090,18 @@ function renderPositions(tab){
 
     // Columna "Valor" y "G/P" adaptadas para trasteros
     const valCell = isTrastero
-      ? `<span class="mono" style="font-size:11px;color:var(--muted)">Inv: ${fe(p.cost)}</span>`
+      ? `<span class="mono" style="font-weight:600">${fe(p.val)}</span>`
       : `<span class="mono" style="font-weight:600">${fe(p.val)}</span>`;
     const gpCell = isTrastero
-      ? `<span class="mono pos-val">Ing: ${fe(p.ingresos||0)}</span>`
+      ? `<span class="mono ${s?'pos-val':'neg-val'}">${s?'+':''}${fe(p.gp)}</span>`
       : `<span class="mono ${s?'pos-val':'neg-val'}">${s?'+':''}${fe(p.gp)}</span>`;
 
     return `<tr>
       <td>${p.ticker?`<span class="ticker-badge">${p.ticker}</span>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
-      <td>
-        <strong style="font-size:12px">${p.name}</strong>
-        ${isTrastero&&p.ingresos>0?`<br><span style="font-size:10px;color:var(--accent)">Ingresos acumulados: ${fe(p.ingresos)}</span>`:''}
-      </td>
+      <td><strong style="font-size:12px">${p.name}</strong></td>
       <td><span class="tag">${CATS[p.cat]?.label||p.cat}</span></td>
       <td class="mono">${isTrastero ? '—' : fn(p.qty)}</td>
-      <td class="mono">${fe(p.avgBuy)}</td>
+      <td class="mono">${isTrastero ? '—' : fe(p.avgBuy)}</td>
       <td class="mono">${fe(p.cost)}</td>
       <td class="mono">${isTrastero ? '<span style="color:var(--muted);font-size:11px">manual</span>' : qStatus==='live'?`<span class="quote-fresh">${fe(p.curPrice)}</span>`:qStatus==='demo'?`<span class="quote-stale">${fe(p.curPrice)} ◎</span>`:`<span class="quote-manual">${fe(p.curPrice)}</span>`}</td>
       <td>${valCell}</td>
