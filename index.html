@@ -525,7 +525,7 @@ select option{background:var(--card)}
     <div class="form-grid">
       <div class="form-group full">
         <label>Categoría</label>
-        <select id="f-cat" onchange="onCatChange()">
+        <select id="f-cat">
           <option value="Acciones/ETFs">💹 Acciones / ETFs</option>
           <option value="Fondos">📦 Fondos de Inversión</option>
           <option value="Cripto">₿ Criptomonedas</option>
@@ -1444,12 +1444,12 @@ function isFondoMode(){ return document.getElementById('f-cat').value === 'Fondo
 function onCatChange(){
   const fondo = isFondoMode();
   // Campos estándar
-  document.getElementById('field-qty').style.display          = fondo ? 'none' : '';
-  document.getElementById('field-price').style.display        = fondo ? 'none' : '';
+  document.getElementById('field-qty').style.display            = fondo ? 'none' : 'flex';
+  document.getElementById('field-price').style.display          = fondo ? 'none' : 'flex';
   // Campos fondo
-  document.getElementById('field-aportado').style.display     = fondo ? '' : 'none';
-  document.getElementById('field-valoractual').style.display  = fondo ? '' : 'none';
-  document.getElementById('field-rentab-preview').style.display = fondo ? '' : 'none';
+  document.getElementById('field-aportado').style.display       = fondo ? 'flex' : 'none';
+  document.getElementById('field-valoractual').style.display    = fondo ? 'flex' : 'none';
+  document.getElementById('field-rentab-preview').style.display = fondo ? 'block' : 'none';
   // Ticker hint
   document.getElementById('f-ticker-hint').textContent = fondo
     ? 'Opcional — ej: VUSA:AMS (para proxy de cotización)'
@@ -1922,7 +1922,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(state.avKey) document.getElementById('avKey').value=state.avKey;
   if(state.gClientId) document.getElementById('gClientId').value=state.gClientId;
   if(state.gSheetId)  document.getElementById('gSheetId').value=state.gSheetId;
-  // Fund mode live preview
+  // Fund mode live preview + category change
+  document.getElementById('f-cat').addEventListener('change', onCatChange);
   document.getElementById('f-aportado').addEventListener('input', updateRentabPreview);
   document.getElementById('f-valoractual').addEventListener('input', updateRentabPreview);
   renderDashboard();
