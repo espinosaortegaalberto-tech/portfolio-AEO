@@ -525,7 +525,7 @@ select option{background:var(--card)}
     <div class="form-grid">
       <div class="form-group full">
         <label>Categoría</label>
-        <select id="f-cat">
+        <select id="f-cat" onchange="onCatChange()">
           <option value="Acciones/ETFs">💹 Acciones / ETFs</option>
           <option value="Fondos">📦 Fondos de Inversión</option>
           <option value="Cripto">₿ Criptomonedas</option>
@@ -534,15 +534,18 @@ select option{background:var(--card)}
           <option value="Cash">💰 Cash / Cuentas</option>
         </select>
       </div>
+
+      <!-- Ticker + nombre siempre visibles -->
       <div class="form-group">
-        <label>Ticker (Yahoo Finance format)</label>
-        <input type="text" id="f-ticker" placeholder="MSFT · BTC-EUR · SPY">
-        <span class="hint">Dejar vacío si no cotiza (Cash, Trasteros)</span>
+        <label id="f-ticker-label">Ticker</label>
+        <input type="text" id="f-ticker" placeholder="MSFT · BTC/EUR · VUSA:AMS">
+        <span class="hint" id="f-ticker-hint">Dejar vacío si no cotiza</span>
       </div>
       <div class="form-group">
         <label>Nombre / Descripción</label>
         <input type="text" id="f-name" placeholder="Microsoft Corp">
       </div>
+
       <div class="form-group">
         <label>Tipo de operación</label>
         <select id="f-type"><option>COMPRA</option><option>VENTA</option><option>DIVIDENDO</option><option>INGRESO</option></select>
@@ -551,21 +554,44 @@ select option{background:var(--card)}
         <label>Fecha</label>
         <input type="date" id="f-date">
       </div>
-      <div class="form-group">
-        <label>Cantidad</label>
+
+      <!-- Campos modo ESTÁNDAR (acciones, cripto, etc.) -->
+      <div class="form-group" id="field-qty">
+        <label>Cantidad / Participaciones</label>
         <input type="number" id="f-qty" placeholder="10" step="0.0001">
       </div>
-      <div class="form-group">
+      <div class="form-group" id="field-price">
         <label>Precio unitario (€)</label>
         <input type="number" id="f-price" placeholder="280.50" step="0.01">
       </div>
+
+      <!-- Campos modo FONDO -->
+      <div class="form-group" id="field-aportado" style="display:none">
+        <label>Importe aportado (€)</label>
+        <input type="number" id="f-aportado" placeholder="10000" step="0.01">
+        <span class="hint">Lo que invertiste en total</span>
+      </div>
+      <div class="form-group" id="field-valoractual" style="display:none">
+        <label>Valor actual (€)</label>
+        <input type="number" id="f-valoractual" placeholder="12500" step="0.01">
+        <span class="hint">Valor a fecha de hoy</span>
+      </div>
+
+      <!-- Rentabilidad calculada en vivo (solo fondos) -->
+      <div class="form-group full" id="field-rentab-preview" style="display:none">
+        <div style="background:var(--card2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;color:var(--muted)">Rentabilidad calculada</span>
+          <span id="rentab-preview" style="font-family:var(--mono);font-size:14px;font-weight:700">—</span>
+        </div>
+      </div>
+
       <div class="form-group">
         <label>Comisiones (€)</label>
         <input type="number" id="f-fees" placeholder="0" step="0.01" value="0">
       </div>
       <div class="form-group">
-        <label>Broker / Exchange</label>
-        <input type="text" id="f-broker" placeholder="DEGIRO · Binance · MyInvestor">
+        <label>Broker / Gestora</label>
+        <input type="text" id="f-broker" placeholder="MyInvestor · Renta4 · Indexa">
       </div>
       <div class="form-group full">
         <label>Notas</label>
@@ -649,12 +675,17 @@ function save(){
 // AGGREGATION
 // ════════════════════════════════════════════════════════
 function getPositions(){
-  // Aggregate ops by ticker+name+cat, COMPRA adds, VENTA subtracts
   const map = {};
   state.operations.forEach(op => {
     const key = (op.ticker||'__'+op.name) + '|' + op.cat;
-    if (!map[key]) map[key] = {ticker:op.ticker, name:op.name, cat:op.cat, qty:0, totalCost:0};
-    if (['COMPRA','INGRESO'].includes(op.type)) {
+    if (!map[key]) map[key] = {ticker:op.ticker, name:op.name, cat:op.cat, qty:0, totalCost:0, fondoMode:false, valorActual:0};
+
+    if (op.fondoMode) {
+      // Fondo: qty=1 ficticio, price=aportado, valorActual=valor actual guardado
+      map[key].fondoMode  = true;
+      map[key].totalCost += op.aportado || op.price || 0;
+      map[key].valorActual = op.valorActual || op.aportado || 0; // último valor actual
+    } else if (['COMPRA','INGRESO'].includes(op.type)) {
       map[key].qty       += op.qty;
       map[key].totalCost += op.qty * op.price + (op.fees||0);
     } else if (op.type === 'VENTA') {
@@ -662,9 +693,17 @@ function getPositions(){
       map[key].totalCost -= op.qty * op.price;
     }
   });
-  return Object.values(map).filter(p => p.qty > 0.0001).map(p => {
-    const avgBuy = p.qty > 0 ? p.totalCost / p.qty : 0;
-    const q = p.ticker ? state.quotes[p.ticker] : null;
+
+  return Object.values(map).filter(p => p.fondoMode || p.qty > 0.0001).map(p => {
+    if (p.fondoMode) {
+      const cost = p.totalCost;
+      const val  = p.valorActual;
+      const gp   = val - cost;
+      const pct  = cost ? gp/cost : 0;
+      return {...p, qty:1, avgBuy:cost, curPrice:val, val, cost, gp, pct, quoteDate:null, quoteSource:'manual'};
+    }
+    const avgBuy   = p.qty > 0 ? p.totalCost / p.qty : 0;
+    const q        = p.ticker ? state.quotes[p.ticker] : null;
     const curPrice = q ? q.priceEur : (p.totalCost / Math.max(p.qty,1));
     const val  = p.qty * curPrice;
     const cost = p.totalCost;
@@ -1060,15 +1099,21 @@ function renderOps(){
   const ops = [...state.operations].reverse();
   document.getElementById('opsTbody').innerHTML = ops.map(o=>{
     const s=['COMPRA','INGRESO'].includes(o.type);
-    const total = o.qty * o.price + (o.fees||0);
+    const total = o.fondoMode ? (o.aportado||o.price||0) : o.qty * o.price + (o.fees||0);
+    const qtyDisplay = o.fondoMode
+      ? `<span style="font-size:10px;color:var(--accent3)">fondo</span>`
+      : `<span class="mono">${fn(o.qty)}</span>`;
+    const priceDisplay = o.fondoMode
+      ? `<span class="mono" style="font-size:11px">${fe(o.aportado||0)} <span style="color:var(--muted)">→</span> ${fe(o.valorActual||0)}</span>`
+      : `<span class="mono">${fe(o.price)}</span>`;
     return `<tr>
       <td class="mono" style="font-size:11px">${o.date}</td>
       <td>${o.ticker?`<span class="ticker-badge">${o.ticker}</span>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
       <td style="font-size:12px">${o.name}</td>
       <td><span class="tag">${CATS[o.cat]?.label||o.cat}</span></td>
       <td><span class="badge ${s?'neu':'neg'}">${o.type}</span></td>
-      <td class="mono">${fn(o.qty)}</td>
-      <td class="mono">${fe(o.price)}</td>
+      <td>${qtyDisplay}</td>
+      <td>${priceDisplay}</td>
       <td class="mono" style="font-weight:600">${fe(total)}</td>
       <td style="white-space:nowrap">
         <button class="btn-icon btn-edit" title="Editar"   onclick="editOp('${o.uid}')">✏️</button>
@@ -1392,9 +1437,43 @@ function renderHistTable(){
 }
 
 // ════════════════════════════════════════════════════════
+// MODAL — FONDO MODE TOGGLE
+// ════════════════════════════════════════════════════════
+function isFondoMode(){ return document.getElementById('f-cat').value === 'Fondos'; }
+
+function onCatChange(){
+  const fondo = isFondoMode();
+  // Campos estándar
+  document.getElementById('field-qty').style.display          = fondo ? 'none' : '';
+  document.getElementById('field-price').style.display        = fondo ? 'none' : '';
+  // Campos fondo
+  document.getElementById('field-aportado').style.display     = fondo ? '' : 'none';
+  document.getElementById('field-valoractual').style.display  = fondo ? '' : 'none';
+  document.getElementById('field-rentab-preview').style.display = fondo ? '' : 'none';
+  // Ticker hint
+  document.getElementById('f-ticker-hint').textContent = fondo
+    ? 'Opcional — ej: VUSA:AMS (para proxy de cotización)'
+    : 'Dejar vacío si no cotiza (Cash, Trasteros)';
+  if (fondo) updateRentabPreview();
+}
+
+function updateRentabPreview(){
+  const aportado    = parseFloat(document.getElementById('f-aportado').value)||0;
+  const valorActual = parseFloat(document.getElementById('f-valoractual').value)||0;
+  const el = document.getElementById('rentab-preview');
+  if (!aportado || !valorActual){ el.textContent='—'; el.style.color='var(--muted)'; return; }
+  const gp  = valorActual - aportado;
+  const pct = aportado ? gp/aportado : 0;
+  el.textContent = `${fe(gp)}   ${fp(pct)}`;
+  el.style.color = gp >= 0 ? 'var(--accent)' : 'var(--red)';
+}
+
+// Live preview wired up in main DOMContentLoaded below
+
+// ════════════════════════════════════════════════════════
 // OPERATIONS CRUD
 // ════════════════════════════════════════════════════════
-let _editUid = null; // null = nueva operación, string = uid de la que se edita
+let _editUid = null;
 
 function openOpModal(uid=null){
   _editUid = uid;
@@ -1406,18 +1485,23 @@ function openOpModal(uid=null){
   if(isEdit){
     const o = state.operations.find(x=>x.uid===uid);
     if(!o){ showToast('Operación no encontrada','neg'); return; }
-    sub.textContent  = `Editando: ${o.name} · ${o.date}`;
+    sub.textContent   = `Editando: ${o.name} · ${o.date}`;
     sub.style.display = '';
     document.getElementById('f-cat').value    = o.cat;
     document.getElementById('f-ticker').value = o.ticker||'';
     document.getElementById('f-name').value   = o.name;
     document.getElementById('f-type').value   = o.type;
     document.getElementById('f-date').value   = o.date;
-    document.getElementById('f-qty').value    = o.qty;
-    document.getElementById('f-price').value  = o.price;
     document.getElementById('f-fees').value   = o.fees||0;
     document.getElementById('f-broker').value = o.broker||'';
     document.getElementById('f-notes').value  = o.notes||'';
+    if(o.fondoMode){
+      document.getElementById('f-aportado').value    = o.aportado||'';
+      document.getElementById('f-valoractual').value = o.valorActual||'';
+    } else {
+      document.getElementById('f-qty').value   = o.qty;
+      document.getElementById('f-price').value = o.price;
+    }
   } else {
     sub.style.display = 'none';
     document.getElementById('f-cat').value    = 'Acciones/ETFs';
@@ -1427,10 +1511,13 @@ function openOpModal(uid=null){
     document.getElementById('f-date').value   = new Date().toISOString().split('T')[0];
     document.getElementById('f-qty').value    = '';
     document.getElementById('f-price').value  = '';
+    document.getElementById('f-aportado').value    = '';
+    document.getElementById('f-valoractual').value = '';
     document.getElementById('f-fees').value   = '0';
     document.getElementById('f-broker').value = '';
     document.getElementById('f-notes').value  = '';
   }
+  onCatChange(); // set correct field visibility
   document.getElementById('opModal').classList.add('open');
 }
 
@@ -1439,7 +1526,7 @@ function editOp(uid){ openOpModal(uid); }
 function deleteOp(uid){
   const o = state.operations.find(x=>x.uid===uid);
   if(!o){ showToast('Operación no encontrada','neg'); return; }
-  if(!confirm(`¿Eliminar esta operación?\n\n${o.date} · ${o.type} · ${o.name}\n${fn(o.qty)} × ${fe(o.price)}`)) return;
+  if(!confirm(`¿Eliminar esta operación?\n\n${o.date} · ${o.type} · ${o.name}`)) return;
   state.operations = state.operations.filter(x=>x.uid!==uid);
   save();
   renderAll();
@@ -1458,24 +1545,33 @@ function saveOperation(){
   const name   = document.getElementById('f-name').value.trim();
   const type   = document.getElementById('f-type').value;
   const date   = document.getElementById('f-date').value;
-  const qty    = parseFloat(document.getElementById('f-qty').value)||0;
-  const price  = parseFloat(document.getElementById('f-price').value)||0;
   const fees   = parseFloat(document.getElementById('f-fees').value)||0;
   const broker = document.getElementById('f-broker').value.trim();
   const notes  = document.getElementById('f-notes').value.trim();
+  const fondo  = isFondoMode();
 
-  if(!name||!qty||!price){ showToast('Rellena: nombre, cantidad y precio','warn'); return; }
+  let op;
+  if(fondo){
+    const aportado    = parseFloat(document.getElementById('f-aportado').value)||0;
+    const valorActual = parseFloat(document.getElementById('f-valoractual').value)||0;
+    if(!name||!aportado){ showToast('Rellena: nombre e importe aportado','warn'); return; }
+    op = {uid: _editUid||genUid(), date, ticker, name, cat, type:'COMPRA', broker, fees, notes,
+          fondoMode:true, aportado, valorActual, qty:1, price:aportado};
+  } else {
+    const qty   = parseFloat(document.getElementById('f-qty').value)||0;
+    const price = parseFloat(document.getElementById('f-price').value)||0;
+    if(!name||!qty||!price){ showToast('Rellena: nombre, cantidad y precio','warn'); return; }
+    op = {uid: _editUid||genUid(), date, ticker, name, cat, type, broker, qty, price, fees, notes, fondoMode:false};
+  }
 
   if(_editUid !== null){
-    // Editar — buscar por uid y reemplazar manteniendo el uid
     const idx = state.operations.findIndex(x=>x.uid===_editUid);
-    if(idx === -1){ showToast('Operación no encontrada','neg'); return; }
-    state.operations[idx] = {uid:_editUid, date, ticker, name, cat, type, broker, qty, price, fees, notes};
+    if(idx===-1){ showToast('Operación no encontrada','neg'); return; }
+    state.operations[idx] = op;
     showToast(`✅ Actualizada: ${name}`,'pos');
   } else {
-    // Nueva operación — generar uid nuevo
-    state.operations.push({uid:genUid(), date, ticker, name, cat, type, broker, qty, price, fees, notes});
-    showToast(`✅ ${type} registrada: ${name}`,'pos');
+    state.operations.push(op);
+    showToast(`✅ Registrada: ${name}`,'pos');
     if(ticker && state.avKey && !state.quotes[ticker]){
       fetchQuote(ticker).then(q=>{ if(q){state.quotes[ticker]=q;save();renderAll();} });
     }
@@ -1826,10 +1922,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(state.avKey) document.getElementById('avKey').value=state.avKey;
   if(state.gClientId) document.getElementById('gClientId').value=state.gClientId;
   if(state.gSheetId)  document.getElementById('gSheetId').value=state.gSheetId;
+  // Fund mode live preview
+  document.getElementById('f-aportado').addEventListener('input', updateRentabPreview);
+  document.getElementById('f-valoractual').addEventListener('input', updateRentabPreview);
   renderDashboard();
   document.getElementById('opModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeOpModal();});
   checkAndTakeSnapshot();
-  // Pre-load Google scripts if client ID is already configured
   if(state.gClientId) loadGoogleScripts();
   setGConnected(false);
 });
