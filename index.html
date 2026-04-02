@@ -678,13 +678,32 @@ function getPositions(){
   const map = {};
   state.operations.forEach(op => {
     const key = (op.ticker||'__'+op.name) + '|' + op.cat;
-    if (!map[key]) map[key] = {ticker:op.ticker, name:op.name, cat:op.cat, qty:0, totalCost:0, fondoMode:false, valorActual:0};
+    if (!map[key]) map[key] = {
+      ticker:op.ticker, name:op.name, cat:op.cat,
+      qty:0, totalCost:0, fondoMode:false, valorActual:0,
+      // Trasteros
+      aportaciones:0, ingresos:0,
+    };
 
     if (op.fondoMode) {
-      // Fondo: qty=1 ficticio, price=aportado, valorActual=valor actual guardado
-      map[key].fondoMode  = true;
-      map[key].totalCost += op.aportado || op.price || 0;
-      map[key].valorActual = op.valorActual || op.aportado || 0; // último valor actual
+      map[key].fondoMode   = true;
+      map[key].totalCost  += op.aportado || op.price || 0;
+      map[key].valorActual = op.valorActual || op.aportado || 0;
+
+    } else if (op.cat === 'Trasteros') {
+      // COMPRA = aportación de capital (inversión)
+      // INGRESO = pago recibido (alquiler, venta parcial…)
+      if (op.type === 'COMPRA') {
+        map[key].aportaciones += op.qty * op.price + (op.fees||0);
+        map[key].totalCost    += op.qty * op.price + (op.fees||0);
+        map[key].qty          += op.qty;
+      } else if (op.type === 'INGRESO') {
+        map[key].ingresos += op.qty * op.price;
+      } else if (op.type === 'VENTA') {
+        map[key].ingresos += op.qty * op.price; // venta = ingreso final
+        map[key].qty      -= op.qty;
+      }
+
     } else if (['COMPRA','INGRESO'].includes(op.type)) {
       map[key].qty       += op.qty;
       map[key].totalCost += op.qty * op.price + (op.fees||0);
@@ -694,7 +713,9 @@ function getPositions(){
     }
   });
 
-  return Object.values(map).filter(p => p.fondoMode || p.qty > 0.0001).map(p => {
+  return Object.values(map).filter(p => p.fondoMode || p.qty > 0.0001 || p.cat === 'Trasteros').map(p => {
+
+    // ── FONDO MODE ──
     if (p.fondoMode) {
       const cost = p.totalCost;
       const val  = p.valorActual;
@@ -702,6 +723,22 @@ function getPositions(){
       const pct  = cost ? gp/cost : 0;
       return {...p, qty:1, avgBuy:cost, curPrice:val, val, cost, gp, pct, quoteDate:null, quoteSource:'manual'};
     }
+
+    // ── TRASTEROS: rentabilidad = (ingresos / aportaciones - 1) ──
+    if (p.cat === 'Trasteros') {
+      const cost    = p.aportaciones;
+      // Valor actual = aportaciones + ingresos acumulados (el dinero ya generado)
+      // El valor "vivo" del trastero sigue siendo la inversión original hasta que se venda
+      const val     = cost; // valor contable = lo invertido (sin revalorización automática)
+      const ingresos= p.ingresos;
+      const gp      = ingresos;                          // ganancia = ingresos recibidos
+      const pct     = cost ? (ingresos / cost) : 0;      // (ingresos / aportaciones - 1) + 1 simplificado
+      return {...p, avgBuy:cost, curPrice:cost, val, cost, gp, pct,
+               ingresos, quoteDate:null, quoteSource:'manual',
+               extraLabel:`Ingresos recibidos: ${fe(ingresos)}`};
+    }
+
+    // ── ESTÁNDAR (acciones, cripto, etc.) ──
     const avgBuy   = p.qty > 0 ? p.totalCost / p.qty : 0;
     const q        = p.ticker ? state.quotes[p.ticker] : null;
     const curPrice = q ? q.priceEur : (p.totalCost / Math.max(p.qty,1));
@@ -1053,16 +1090,29 @@ function renderPositions(tab){
   document.getElementById('posTbody').innerHTML = pos.map(p=>{
     const s=p.gp>=0;
     const qStatus = !p.ticker ? 'manual' : (p.quoteSource==='demo' ? 'demo' : 'live');
+    const isTrastero = p.cat === 'Trasteros';
+
+    // Columna "Valor" y "G/P" adaptadas para trasteros
+    const valCell = isTrastero
+      ? `<span class="mono" style="font-size:11px;color:var(--muted)">Inv: ${fe(p.cost)}</span>`
+      : `<span class="mono" style="font-weight:600">${fe(p.val)}</span>`;
+    const gpCell = isTrastero
+      ? `<span class="mono pos-val">Ing: ${fe(p.ingresos||0)}</span>`
+      : `<span class="mono ${s?'pos-val':'neg-val'}">${s?'+':''}${fe(p.gp)}</span>`;
+
     return `<tr>
       <td>${p.ticker?`<span class="ticker-badge">${p.ticker}</span>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
-      <td><strong style="font-size:12px">${p.name}</strong></td>
+      <td>
+        <strong style="font-size:12px">${p.name}</strong>
+        ${isTrastero&&p.ingresos>0?`<br><span style="font-size:10px;color:var(--accent)">Ingresos acumulados: ${fe(p.ingresos)}</span>`:''}
+      </td>
       <td><span class="tag">${CATS[p.cat]?.label||p.cat}</span></td>
-      <td class="mono">${fn(p.qty)}</td>
+      <td class="mono">${isTrastero ? '—' : fn(p.qty)}</td>
       <td class="mono">${fe(p.avgBuy)}</td>
       <td class="mono">${fe(p.cost)}</td>
-      <td class="mono">${qStatus==='live'?`<span class="quote-fresh">${fe(p.curPrice)}</span>`:qStatus==='demo'?`<span class="quote-stale">${fe(p.curPrice)} ◎</span>`:`<span class="quote-manual">${fe(p.curPrice)}</span>`}</td>
-      <td class="mono" style="font-weight:600">${fe(p.val)}</td>
-      <td class="mono ${s?'pos-val':'neg-val'}">${s?'+':''}${fe(p.gp)}</td>
+      <td class="mono">${isTrastero ? '<span style="color:var(--muted);font-size:11px">manual</span>' : qStatus==='live'?`<span class="quote-fresh">${fe(p.curPrice)}</span>`:qStatus==='demo'?`<span class="quote-stale">${fe(p.curPrice)} ◎</span>`:`<span class="quote-manual">${fe(p.curPrice)}</span>`}</td>
+      <td>${valCell}</td>
+      <td>${gpCell}</td>
       <td><span class="badge ${s?'pos':'neg'}">${fp(p.pct)}</span></td>
     </tr>`;
   }).join('');
