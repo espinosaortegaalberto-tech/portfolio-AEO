@@ -370,22 +370,31 @@ select option{background:var(--card)}
 <!-- ══ CONFIGURACIÓN ══ -->
 <div class="section" id="sec-config">
 
-  <!-- Alpha Vantage -->
+  <!-- Twelve Data -->
   <div class="api-panel">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <span style="font-size:22px">🔑</span>
-      <div><div style="font-size:14px;font-weight:600">Alpha Vantage API</div>
-      <div style="font-size:11px;color:var(--muted)">Cotizaciones en tiempo real · 25 llamadas/día gratis</div></div>
+      <span style="font-size:22px">📡</span>
+      <div>
+        <div style="font-size:14px;font-weight:600">Twelve Data API</div>
+        <div style="font-size:11px;color:var(--muted)">Cotizaciones en tiempo real · 800 llamadas/día gratis · Acciones, ETFs, Cripto, Forex</div>
+      </div>
     </div>
     <div style="display:flex;gap:10px;align-items:flex-end">
       <div style="flex:1">
         <label style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em">API KEY</label>
-        <input type="text" id="avKey" placeholder="Ej: ABCDE12345FGHIJ" style="margin-top:5px;font-family:var(--mono)">
+        <input type="text" id="avKey" placeholder="Ej: a1b2c3d4e5f6789012345678" style="margin-top:5px;font-family:var(--mono)">
       </div>
       <button class="btn btn-primary" onclick="saveAvKey()">💾 Guardar</button>
-      <a href="https://www.alphavantage.co/support/#api-key" target="_blank" class="btn btn-ghost">🔗 Obtener key</a>
+      <a href="https://twelvedata.com/apikey" target="_blank" class="btn btn-ghost">🔗 Obtener key gratis</a>
     </div>
     <div id="avStatus" style="margin-top:10px;font-size:11px;color:var(--muted)"></div>
+    <div style="margin-top:12px;padding:10px 14px;background:var(--card2);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.7">
+      <strong style="color:var(--text)">Formato de tickers en Twelve Data:</strong><br>
+      Acciones USA: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">MSFT</code> <code style="background:var(--surface);padding:1px 5px;border-radius:4px">NVDA</code> &nbsp;·&nbsp;
+      Bolsa española: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">SAN:BME</code> <code style="background:var(--surface);padding:1px 5px;border-radius:4px">ITX:BME</code><br>
+      ETFs Euronext: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">VWRL:LSE</code> &nbsp;·&nbsp;
+      Cripto: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">BTC/EUR</code> <code style="background:var(--surface);padding:1px 5px;border-radius:4px">ETH/EUR</code>
+    </div>
   </div>
 
   <!-- Google Sheets connection -->
@@ -462,12 +471,12 @@ select option{background:var(--card)}
 
     <!-- Ticker guide -->
     <div class="panel">
-      <div class="panel-head"><span class="panel-title">📖 Guía de tickers</span></div>
+      <div class="panel-head"><span class="panel-title">📖 Guía de tickers (Twelve Data)</span></div>
       <div style="padding:18px;display:flex;flex-direction:column;gap:10px;font-size:12px">
         <div><strong style="color:var(--text)">Acciones USA</strong><br><span class="ticker-badge">MSFT</span> <span class="ticker-badge">AAPL</span> <span class="ticker-badge">NVDA</span> <span class="ticker-badge">AMZN</span></div>
-        <div><strong style="color:var(--text)">Acciones EU</strong><br><span class="ticker-badge">ASML.AS</span> <span class="ticker-badge">SAN.MC</span> <span class="ticker-badge">AIR.PA</span></div>
-        <div><strong style="color:var(--text)">ETFs</strong><br><span class="ticker-badge">SPY</span> <span class="ticker-badge">QQQ</span> <span class="ticker-badge">VWRL.L</span></div>
-        <div><strong style="color:var(--text)">Cripto (par EUR)</strong><br><span class="ticker-badge">BTC-EUR</span> <span class="ticker-badge">ETH-EUR</span></div>
+        <div><strong style="color:var(--text)">Bolsa española (BME)</strong><br><span class="ticker-badge">SAN:BME</span> <span class="ticker-badge">ITX:BME</span> <span class="ticker-badge">TEF:BME</span></div>
+        <div><strong style="color:var(--text)">ETFs (Londres/Euronext)</strong><br><span class="ticker-badge">VWRL:LSE</span> <span class="ticker-badge">CSPX:LSE</span> <span class="ticker-badge">IWDA:AMS</span></div>
+        <div><strong style="color:var(--text)">Cripto (par EUR)</strong><br><span class="ticker-badge">BTC/EUR</span> <span class="ticker-badge">ETH/EUR</span> <span class="ticker-badge">SOL/EUR</span></div>
         <div><strong style="color:var(--text)">Sin ticker</strong> → <span class="badge neu">Cash</span> <span class="badge neu">Trasteros</span> <span class="badge neu">Renta Fija manual</span></div>
       </div>
     </div>
@@ -601,8 +610,8 @@ function getDefaultOps(){
     {uid:'op2',  date:'2022-11-01', ticker:'SPY',     name:'S&P 500 ETF',           cat:'Acciones/ETFs', type:'COMPRA',  broker:'Interactive Brokers', qty:5,     price:380.00, fees:3.00},
     {uid:'op3',  date:'2023-06-20', ticker:'NVDA',    name:'Nvidia Corp',           cat:'Acciones/ETFs', type:'COMPRA',  broker:'DEGIRO',             qty:3,     price:420.00, fees:1.50},
     {uid:'op4',  date:'2022-01-10', ticker:'VWRL.L',  name:'Vanguard All-World ETF',cat:'Fondos',        type:'COMPRA',  broker:'MyInvestor',          qty:120.5, price:108.20, fees:0},
-    {uid:'op5',  date:'2021-05-01', ticker:'BTC-EUR', name:'Bitcoin',               cat:'Cripto',        type:'COMPRA',  broker:'Binance',             qty:0.15,  price:48000,  fees:0},
-    {uid:'op6',  date:'2022-06-15', ticker:'ETH-EUR', name:'Ethereum',              cat:'Cripto',        type:'COMPRA',  broker:'MetaMask',            qty:2.5,   price:1800,   fees:0},
+    {uid:'op5',  date:'2021-05-01', ticker:'BTC/EUR', name:'Bitcoin',               cat:'Cripto',        type:'COMPRA',  broker:'Binance',             qty:0.15,  price:48000,  fees:0},
+    {uid:'op6',  date:'2022-06-15', ticker:'ETH/EUR', name:'Ethereum',              cat:'Cripto',        type:'COMPRA',  broker:'MetaMask',            qty:2.5,   price:1800,   fees:0},
     {uid:'op7',  date:'2024-02-01', ticker:'',        name:'Letra Tesoro 12m',      cat:'Renta Fija',    type:'COMPRA',  broker:'Banco Directo',       qty:1,     price:10000,  fees:0},
     {uid:'op8',  date:'2021-03-01', ticker:'',        name:'Trastero Gran Vía 12',  cat:'Trasteros',     type:'COMPRA',  broker:'Wardado',             qty:1,     price:8950,   fees:0},
     {uid:'op9',  date:'2024-01-01', ticker:'',        name:'Trade Republic',        cat:'Cash',          type:'INGRESO', broker:'Trade Republic',      qty:1,     price:15000,  fees:0},
@@ -697,90 +706,118 @@ const fp = n => (n>=0?'+':'') + (n*100).toFixed(2) + '%';
 const fn = n => n.toLocaleString('es-ES',{maximumFractionDigits:6});
 
 // ════════════════════════════════════════════════════════
-// ALPHA VANTAGE API
+// TWELVE DATA API
 // ════════════════════════════════════════════════════════
+const TD_BASE = 'https://api.twelvedata.com';
 
-// Tickers que cotizan en EUR o GBP (no necesitan conversión USD→EUR)
-// Sufijos europeos: .AS=Amsterdam, .MC=Madrid, .PA=París, .MI=Milán, .L=Londres(GBP), .SW=Suiza
-function detectCurrency(ticker){
-  if (ticker.endsWith('.L'))                          return 'GBP'; // Londres cotiza en peniques (GBX), ajuste abajo
-  if (/\.(AS|MC|PA|MI|DE|BR|SW|VI|HE|OL|ST)$/i.test(ticker)) return 'EUR';
-  if (ticker.includes('-EUR'))                        return 'EUR';
-  if (ticker.includes('-GBP'))                        return 'GBP';
-  return 'USD'; // Por defecto acciones USA
+// Twelve Data usa formato "SYMBOL:EXCHANGE" para bolsas no-USA
+// Cripto usa "BTC/EUR" con barra
+// Esta función normaliza el ticker al formato correcto para TD
+function normalizeTicker(ticker){
+  // Cripto: BTC-EUR → BTC/EUR
+  if (/^[A-Z]+-(EUR|USD|GBP|USDT)$/i.test(ticker))
+    return ticker.replace('-','/');
+  // Ya tiene formato correcto (MSFT, VWRL:LSE, SAN:BME, etc.)
+  return ticker;
+}
+
+// Detecta si es cripto
+function isCrypto(ticker){
+  return /^[A-Z]+[-\/](EUR|USD|GBP|USDT)$/i.test(ticker);
+}
+
+// Detecta divisa a partir del ticker TD
+function getCurrencyFromTicker(ticker){
+  if (isCrypto(ticker)){
+    const pair = ticker.replace('-','/');
+    return pair.split('/')[1].toUpperCase();
+  }
+  // Bolsas europeas con sufijo conocido devuelven EUR
+  if (/(BME|EPA|AMS|MIL|FRA|SWX|BIT|ELI)$/i.test(ticker)) return 'EUR';
+  if (/LSE$/i.test(ticker)) return 'GBP';
+  return 'USD'; // Default USA
 }
 
 async function fetchQuote(ticker){
   if (!state.avKey) return null;
+  const tdTicker = normalizeTicker(ticker);
+  const crypto   = isCrypto(ticker);
+  const currency = getCurrencyFromTicker(ticker);
 
-  // ── Cripto y forex: usar CURRENCY_EXCHANGE_RATE ──
-  if (ticker.includes('-EUR') || ticker.includes('-USD') || ticker.includes('-GBP')) {
-    const [from, to] = ticker.split('-');
-    const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${state.avKey}`;
-    try {
-      const r = await fetch(url);
-      const d = await r.json();
-      if (d['Note'] || d['Information']) { console.warn('AV rate limit:', ticker); return null; }
-      const rate = parseFloat(d?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate']);
-      if (!isNaN(rate)) return {price:rate, priceEur:to==='EUR'?rate:rate*state.usdEur, date:new Date().toISOString().split('T')[0], source:'AV-Crypto', currency:to};
-    } catch(e){ console.error('fetchQuote crypto error', ticker, e); }
-    return null;
-  }
-
-  // ── Acciones y ETFs: usar GLOBAL_QUOTE ──
-  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(ticker)}&apikey=${state.avKey}`;
   try {
+    let url;
+    if (crypto) {
+      // Cripto: endpoint /price con par tipo BTC/EUR
+      url = `${TD_BASE}/price?symbol=${encodeURIComponent(tdTicker)}&apikey=${state.avKey}`;
+    } else {
+      // Acciones y ETFs: /quote devuelve precio + divisa + fecha
+      url = `${TD_BASE}/quote?symbol=${encodeURIComponent(tdTicker)}&apikey=${state.avKey}`;
+    }
+
     const r = await fetch(url);
     const d = await r.json();
-    // Rate limit / error detection
-    if (d['Note'] || d['Information']){
-      console.warn('AV rate limit reached for', ticker);
-      showToast('⚠️ Límite de llamadas Alpha Vantage alcanzado (25/día). Inténtalo mañana.','warn');
+
+    // Detección de error / rate limit
+    if (d.status === 'error' || d.code){
+      const msg = d.message || d.code || 'Error desconocido';
+      console.warn(`TD error [${ticker}]:`, msg);
+      if (String(d.code) === '429' || msg.toLowerCase().includes('limit'))
+        showToast('⚠️ Límite de llamadas Twelve Data alcanzado. Espera un momento.','warn');
       return null;
     }
-    const q = d?.['Global Quote'];
-    if (!q || !q['05. price']) { console.warn('No price for', ticker, d); return null; }
 
-    const price    = parseFloat(q['05. price']);
-    const date     = q['07. latest trading day'] || new Date().toISOString().split('T')[0];
-    const currency = detectCurrency(ticker);
-
-    let priceEur;
-    if (currency === 'EUR') {
-      priceEur = price;                          // ya está en EUR
-    } else if (currency === 'GBP') {
-      priceEur = (price / 100) * state.gbpEur;   // Londres cotiza en peniques (GBX)
+    let price, date;
+    if (crypto) {
+      price = parseFloat(d.price);
+      date  = new Date().toISOString().split('T')[0];
     } else {
-      priceEur = price * state.usdEur;            // USD → EUR
+      price = parseFloat(d.close || d.price);
+      date  = d.datetime ? d.datetime.split(' ')[0] : new Date().toISOString().split('T')[0];
     }
 
-    return {price, priceEur, date, source:'AV-Stock', currency};
-  } catch(e){ console.error('fetchQuote error', ticker, e); return null; }
+    if (isNaN(price)) { console.warn(`TD sin precio [${ticker}]`, d); return null; }
+
+    // Conversión a EUR
+    let priceEur;
+    if (currency === 'EUR') {
+      priceEur = price;
+    } else if (currency === 'GBP') {
+      // LSE cotiza en peniques (GBX) → dividir entre 100
+      priceEur = (price / 100) * state.gbpEur;
+    } else if (currency === 'USD' || currency === 'USDT') {
+      priceEur = price * state.usdEur;
+    } else {
+      priceEur = price; // par ya en EUR (cripto BTC/EUR)
+    }
+
+    return {price, priceEur, date, source:'TD', currency};
+
+  } catch(e){
+    console.error(`fetchQuote error [${ticker}]`, e);
+    return null;
+  }
 }
 
-async function fetchUsdEur(){
+// Tipo de cambio USD/EUR y GBP/EUR via Twelve Data
+async function fetchFxRate(from, to, stateKey){
   if (!state.avKey) return;
   try {
-    const r = await fetch(`https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=EUR&apikey=${state.avKey}`);
+    const r = await fetch(`${TD_BASE}/price?symbol=${from}/${to}&apikey=${state.avKey}`);
     const d = await r.json();
-    const rate = parseFloat(d?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate']);
-    if (!isNaN(rate)) { state.usdEur = rate; console.log('USD/EUR actualizado:', rate); }
+    const rate = parseFloat(d.price);
+    if (!isNaN(rate)) {
+      state[stateKey] = rate;
+      console.log(`${from}/${to} actualizado:`, rate);
+    }
   } catch(e){}
 }
 
-async function fetchGbpEur(){
-  if (!state.avKey) return;
-  try {
-    const r = await fetch(`https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=GBP&to_currency=EUR&apikey=${state.avKey}`);
-    const d = await r.json();
-    const rate = parseFloat(d?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate']);
-    if (!isNaN(rate)) { state.gbpEur = rate; console.log('GBP/EUR actualizado:', rate); }
-  } catch(e){}
-}
+async function fetchUsdEur(){ await fetchFxRate('USD','EUR','usdEur'); }
+async function fetchGbpEur(){ await fetchFxRate('GBP','EUR','gbpEur'); }
 
 async function refreshAllQuotes(){
   if (!state.avKey) {
-    showToast('⚠️ Configura tu Alpha Vantage API Key primero', 'warn');
+    showToast('⚠️ Configura tu Twelve Data API Key primero', 'warn');
     showSection('config', document.querySelector('[onclick*=config]'));
     return;
   }
@@ -788,17 +825,18 @@ async function refreshAllQuotes(){
   icon.innerHTML = '<span class="spin"></span>';
   document.getElementById('quoteStatusTop').textContent = 'Actualizando cotizaciones…';
 
+  // Actualizar tipos de cambio primero (2 llamadas)
   await fetchUsdEur();
   await fetchGbpEur();
 
-  // Get unique tickers from operations
+  // Unique tickers from operations
   const tickers = [...new Set(state.operations.map(o=>o.ticker).filter(Boolean))];
-  let updated = 0, failed = 0;
+  let updated = 0, failed = 0, failedList = [];
   for (const ticker of tickers) {
     const q = await fetchQuote(ticker);
     if (q) { state.quotes[ticker] = q; updated++; }
-    else { failed++; }
-    await new Promise(r => setTimeout(r, 500)); // respect rate limit
+    else { failed++; failedList.push(ticker); }
+    await new Promise(r => setTimeout(r, 200)); // TD permite ~8 req/s en plan gratuito
   }
 
   state.lastRefresh = new Date().toISOString();
@@ -807,6 +845,7 @@ async function refreshAllQuotes(){
   document.getElementById('quoteStatusTop').textContent = `✅ ${updated} actualizados · ${failed} errores`;
   document.getElementById('lastSyncLabel').textContent = 'Cotiz: ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
   document.getElementById('quotesBadge').textContent = updated > 0 ? '✓' : '';
+  if (failedList.length) console.warn('Tickers sin datos:', failedList);
   renderAll();
   showToast(`✅ ${updated} cotizaciones actualizadas · ${failed} sin datos`, updated>0?'pos':'warn');
   checkAndTakeSnapshot();
@@ -1456,8 +1495,8 @@ function saveAvKey(){
   if (!k) { showToast('Introduce una API key','warn'); return; }
   state.avKey = k;
   localStorage.setItem('av_key', k);
-  document.getElementById('avStatus').innerHTML = '<span style="color:var(--accent)">✅ API Key guardada.</span>';
-  showToast('✅ Alpha Vantage API Key guardada','pos');
+  document.getElementById('avStatus').innerHTML = '<span style="color:var(--accent)">✅ Twelve Data API Key guardada. Pulsa "Actualizar cotizaciones" para probarla.</span>';
+  showToast('✅ Twelve Data API Key guardada','pos');
 }
 
 // ════════════════════════════════════════════════════════
