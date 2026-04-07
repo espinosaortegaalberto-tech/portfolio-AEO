@@ -376,7 +376,7 @@ select option{background:var(--card)}
       <span style="font-size:22px">📡</span>
       <div>
         <div style="font-size:14px;font-weight:600">Twelve Data API</div>
-        <div style="font-size:11px;color:var(--muted)">Cotizaciones en tiempo real · 800 llamadas/día gratis · Acciones, ETFs, Cripto, Forex</div>
+        <div style="font-size:11px;color:var(--muted)">Cotizaciones en tiempo real · 800 llamadas/día gratis</div>
       </div>
     </div>
     <div style="display:flex;gap:10px;align-items:flex-end">
@@ -385,82 +385,56 @@ select option{background:var(--card)}
         <input type="text" id="avKey" placeholder="Ej: a1b2c3d4e5f6789012345678" style="margin-top:5px;font-family:var(--mono)">
       </div>
       <button class="btn btn-primary" onclick="saveAvKey()">💾 Guardar</button>
-      <a href="https://twelvedata.com/apikey" target="_blank" class="btn btn-ghost">🔗 Obtener key gratis</a>
+      <a href="https://twelvedata.com/apikey" target="_blank" class="btn btn-ghost">🔗 Obtener key</a>
     </div>
     <div id="avStatus" style="margin-top:10px;font-size:11px;color:var(--muted)"></div>
     <div style="margin-top:12px;padding:10px 14px;background:var(--card2);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.7">
-      <strong style="color:var(--text)">Formato de tickers en Twelve Data:</strong><br>
-      Acciones USA: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">MSFT</code> <code style="background:var(--surface);padding:1px 5px;border-radius:4px">NVDA</code> &nbsp;·&nbsp;
-      Bolsa española: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">SAN:BME</code> <code style="background:var(--surface);padding:1px 5px;border-radius:4px">ITX:BME</code><br>
-      ETFs Euronext: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">VWRL:LSE</code> &nbsp;·&nbsp;
-      Cripto: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">BTC/EUR</code> <code style="background:var(--surface);padding:1px 5px;border-radius:4px">ETH/EUR</code>
+      <strong style="color:var(--text)">Tickers:</strong>
+      USA: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">MSFT</code> <code style="background:var(--surface);padding:1px 5px;border-radius:4px">NVDA</code> &nbsp;·&nbsp;
+      España: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">SAN:BME</code> &nbsp;·&nbsp;
+      ETF: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">VWRL:LSE</code> &nbsp;·&nbsp;
+      Cripto: <code style="background:var(--surface);padding:1px 5px;border-radius:4px">BTC/EUR</code>
     </div>
   </div>
 
-  <!-- Google Sheets connection -->
-  <div style="background:linear-gradient(135deg,rgba(66,133,244,.08),rgba(52,168,83,.06));border:1px solid rgba(66,133,244,.2);border-radius:13px;padding:20px;margin-bottom:20px">
+  <!-- Supabase -->
+  <div style="background:linear-gradient(135deg,rgba(62,207,142,.08),rgba(62,207,142,.03));border:1px solid rgba(62,207,142,.2);border-radius:13px;padding:20px;margin-bottom:20px">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-      <svg width="28" height="28" viewBox="0 0 48 48"><path fill="#43A047" d="M37 45H11a3 3 0 01-3-3V6a3 3 0 013-3h19l10 10v29a3 3 0 01-3 3z"/><path fill="#C8E6C9" d="M40 13H30V3z"/><path fill="#E8F5E9" d="M31 23H17v2h14zm0 4H17v2h14zm-7 4h-7v2h7z"/><path fill="#1B5E20" d="M30 3v10h10z" opacity=".2"/></svg>
+      <svg width="28" height="28" viewBox="0 0 109 113" fill="none"><path d="M63.7 110.3c-2.5 3.1-7.7 1.4-7.8-2.5L54.5 24h42.3c7.7 0 12 8.9 7.2 14.9L63.7 110.3z" fill="url(#a)"/><path d="M63.7 110.3c-2.5 3.1-7.7 1.4-7.8-2.5L54.5 24h42.3c7.7 0 12 8.9 7.2 14.9L63.7 110.3z" fill="url(#b)" fill-opacity=".2"/><path d="M45.3 2.7c2.5-3.1 7.7-1.4 7.8 2.5l.6 83.8H11.4c-7.7 0-12-8.9-7.2-14.9L45.3 2.7z" fill="#3ECF8E"/><defs><linearGradient id="a" x1="54.5" y1="24" x2="97.9" y2="54.7" gradientUnits="userSpaceOnUse"><stop stop-color="#249361"/><stop offset="1" stop-color="#3ECF8E"/></linearGradient><linearGradient id="b" x1="36.2" y1="35.6" x2="54.5" y2="86.7" gradientUnits="userSpaceOnUse"><stop/><stop offset="1" stop-opacity="0"/></linearGradient></defs></svg>
       <div>
-        <div style="font-size:14px;font-weight:700">Google Sheets</div>
-        <div style="font-size:11px;color:var(--muted)">Base de datos en la nube · sincronización bidireccional real</div>
+        <div style="font-size:14px;font-weight:700">Supabase</div>
+        <div style="font-size:11px;color:var(--muted)">Base de datos PostgreSQL · sincronización en tiempo real</div>
       </div>
-      <div style="margin-left:auto" id="gAuthStatus">
-        <span class="badge warn" id="gAuthBadge">● No conectado</span>
-      </div>
-    </div>
-
-    <!-- Step 1: Client ID -->
-    <div style="background:var(--card2);border-radius:10px;padding:14px;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Paso 1 — OAuth Client ID (Google Cloud Console)</div>
-      <div style="display:flex;gap:10px;align-items:flex-end">
-        <div style="flex:1">
-          <label>Client ID de Google</label>
-          <input type="text" id="gClientId" placeholder="xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com" style="font-family:var(--mono);font-size:11px;margin-top:5px">
-        </div>
-        <button class="btn btn-ghost" onclick="saveGClientId()">💾 Guardar</button>
-        <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="btn btn-ghost">🔗 Consola</a>
-      </div>
-      <div style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.6">
-        En Google Cloud Console: <strong style="color:var(--text)">APIs y servicios → Credenciales → + Crear credenciales → ID de cliente OAuth → Aplicación web</strong>.
-        Añade <code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:10px">http://localhost</code> y la URL donde hospedarás la app en "Orígenes autorizados".
+      <div style="margin-left:auto">
+        <span class="badge" id="sbBadge" style="background:rgba(251,191,36,.12);color:var(--yellow)">● No conectado</span>
       </div>
     </div>
 
-    <!-- Step 2: Spreadsheet ID -->
-    <div style="background:var(--card2);border-radius:10px;padding:14px;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Paso 2 — ID de la hoja de Google Sheets</div>
-      <div style="display:flex;gap:10px;align-items:flex-end">
-        <div style="flex:1">
-          <label>Spreadsheet ID</label>
-          <input type="text" id="gSheetId" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" style="font-family:var(--mono);font-size:11px;margin-top:5px">
-          <span class="hint">La parte en negrita de la URL: docs.google.com/spreadsheets/d/<strong>ID</strong>/edit</span>
-        </div>
-        <button class="btn btn-ghost" onclick="saveGSheetId()">💾 Guardar</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="form-group">
+        <label>Project URL</label>
+        <input type="text" id="sbUrl" placeholder="https://xxxxxxxxxxxx.supabase.co" style="font-family:var(--mono);font-size:11px">
+      </div>
+      <div class="form-group">
+        <label>Anon Public Key</label>
+        <input type="text" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="font-family:var(--mono);font-size:11px">
       </div>
     </div>
-
-    <!-- Step 3: Connect -->
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-primary" id="gConnectBtn" onclick="googleSignIn()" style="gap:8px">
-        <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 32.4 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 5 12.9 5 4 13.9 4 25s8.9 20 20 20c11 0 19.4-8 19.4-19.4 0-1.2-.1-2.4-.3-3.6z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.8 18.9 13 24 13c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.5 7.1 29 5 24 5c-7.7 0-14.3 4.4-17.7 9.7z"/><path fill="#4CAF50" d="M24 45c5 0 9.5-1.9 12.9-4.9l-6-4.9C29.3 36.9 26.8 38 24 38c-5.2 0-9.6-3.5-11.2-8.2l-6.5 5C9.8 40.7 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6 4.9C41.4 35.3 44 30.5 44 25c0-1.2-.1-2.4-.3-3.6z" opacity=".9"/></svg>
-        Conectar con Google
-      </button>
-      <button class="btn btn-ghost" id="gDisconnectBtn" onclick="googleSignOut()" style="display:none">🔌 Desconectar</button>
-      <button class="btn btn-ghost" id="gSyncBtn" onclick="syncWithSheets()" style="display:none">🔄 Sincronizar ahora</button>
-      <button class="btn btn-ghost" id="gReadBtn" onclick="readFromSheets()" style="display:none">📥 Cargar desde Sheets</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-primary" onclick="sbSaveConfig()">💾 Guardar y conectar</button>
+      <button class="btn btn-ghost" onclick="sbPull()">📥 Cargar desde Supabase</button>
+      <button class="btn btn-ghost" onclick="sbPush()">📤 Subir todo a Supabase</button>
+      <a href="https://supabase.com/dashboard" target="_blank" class="btn btn-ghost">🔗 Panel Supabase</a>
     </div>
-    <div id="gSyncStatus" style="margin-top:10px;font-size:11px;color:var(--muted)"></div>
+    <div id="sbStatus" style="margin-top:10px;font-size:11px;color:var(--muted)"></div>
   </div>
 
   <div class="grid-2">
-    <!-- Snapshots -->
     <div class="panel">
       <div class="panel-head"><span class="panel-title">🗓️ Snapshots semanales</span></div>
       <div style="padding:18px;font-size:13px;line-height:1.9;color:var(--muted)">
-        <p><strong style="color:var(--text)">¿Cuándo?</strong> Cada domingo automáticamente al abrir la app, o manualmente.</p>
-        <p style="margin-top:8px"><strong style="color:var(--text)">¿Qué guarda?</strong> Una fila por ticker con: precio, cantidad, valor, G/P y total del portfolio.</p>
-        <p style="margin-top:8px"><strong style="color:var(--text)">¿Dónde?</strong> Hoja "Histórico" en Google Sheets + almacenamiento local.</p>
+        <p><strong style="color:var(--text)">¿Cuándo?</strong> Cada domingo automáticamente, o manualmente.</p>
+        <p style="margin-top:8px"><strong style="color:var(--text)">¿Dónde?</strong> Tabla <code style="font-size:11px;background:var(--card2);padding:1px 6px;border-radius:4px">snapshots</code> en Supabase + localStorage local.</p>
         <p style="margin-top:8px"><strong style="color:var(--text)">Snapshots guardados:</strong> <span id="snapshotCountConfig" class="badge neu">0</span></p>
         <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="takeManualSnapshot()">📸 Snapshot manual</button>
@@ -468,43 +442,40 @@ select option{background:var(--card)}
         </div>
       </div>
     </div>
-
-    <!-- Ticker guide -->
     <div class="panel">
       <div class="panel-head"><span class="panel-title">📖 Guía de tickers (Twelve Data)</span></div>
       <div style="padding:18px;display:flex;flex-direction:column;gap:10px;font-size:12px">
-        <div><strong style="color:var(--text)">Acciones USA</strong><br><span class="ticker-badge">MSFT</span> <span class="ticker-badge">AAPL</span> <span class="ticker-badge">NVDA</span> <span class="ticker-badge">AMZN</span></div>
-        <div><strong style="color:var(--text)">Bolsa española (BME)</strong><br><span class="ticker-badge">SAN:BME</span> <span class="ticker-badge">ITX:BME</span> <span class="ticker-badge">TEF:BME</span></div>
-        <div><strong style="color:var(--text)">ETFs (Londres/Euronext)</strong><br><span class="ticker-badge">VWRL:LSE</span> <span class="ticker-badge">CSPX:LSE</span> <span class="ticker-badge">IWDA:AMS</span></div>
-        <div><strong style="color:var(--text)">Cripto (par EUR)</strong><br><span class="ticker-badge">BTC/EUR</span> <span class="ticker-badge">ETH/EUR</span> <span class="ticker-badge">SOL/EUR</span></div>
+        <div><strong style="color:var(--text)">Acciones USA</strong><br><span class="ticker-badge">MSFT</span> <span class="ticker-badge">AAPL</span> <span class="ticker-badge">NVDA</span></div>
+        <div><strong style="color:var(--text)">Bolsa española</strong><br><span class="ticker-badge">SAN:BME</span> <span class="ticker-badge">ITX:BME</span> <span class="ticker-badge">TEF:BME</span></div>
+        <div><strong style="color:var(--text)">ETFs</strong><br><span class="ticker-badge">VWRL:LSE</span> <span class="ticker-badge">CSPX:LSE</span> <span class="ticker-badge">IWDA:AMS</span></div>
+        <div><strong style="color:var(--text)">Cripto</strong><br><span class="ticker-badge">BTC/EUR</span> <span class="ticker-badge">ETH/EUR</span> <span class="ticker-badge">SOL/EUR</span></div>
         <div><strong style="color:var(--text)">Sin ticker</strong> → <span class="badge neu">Cash</span> <span class="badge neu">Trasteros</span> <span class="badge neu">Renta Fija manual</span></div>
       </div>
     </div>
   </div>
 
-  <!-- How it works -->
   <div class="panel">
     <div class="panel-head"><span class="panel-title">🔄 Cómo funciona la integración</span></div>
     <div style="padding:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;text-align:center">
       <div style="background:var(--card2);border-radius:10px;padding:14px">
-        <div style="font-size:22px;margin-bottom:6px">🔐</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">1. Login Google</div>
-        <div style="font-size:10px;color:var(--muted)">OAuth2 popup — autorizas acceso a tus Sheets</div>
+        <div style="font-size:22px;margin-bottom:6px">🔑</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">1. Configura</div>
+        <div style="font-size:10px;color:var(--muted)">Pega URL y anon key de tu proyecto Supabase</div>
       </div>
       <div style="background:var(--card2);border-radius:10px;padding:14px">
         <div style="font-size:22px;margin-bottom:6px">📥</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">2. Carga datos</div>
-        <div style="font-size:10px;color:var(--muted)">Lee operaciones e histórico desde Google Sheets</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">2. Carga</div>
+        <div style="font-size:10px;color:var(--muted)">La app lee operaciones y snapshots de Supabase</div>
       </div>
       <div style="background:var(--card2);border-radius:10px;padding:14px">
-        <div style="font-size:22px;margin-bottom:6px">📡</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">3. Cotizaciones</div>
-        <div style="font-size:10px;color:var(--muted)">Alpha Vantage actualiza precios en tiempo real</div>
+        <div style="font-size:22px;margin-bottom:6px">✏️</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">3. Opera</div>
+        <div style="font-size:10px;color:var(--muted)">Cada cambio se guarda en Supabase automáticamente</div>
       </div>
       <div style="background:var(--card2);border-radius:10px;padding:14px">
-        <div style="font-size:22px;margin-bottom:6px">📤</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">4. Guarda</div>
-        <div style="font-size:10px;color:var(--muted)">Snapshots y cambios se escriben de vuelta a Sheets</div>
+        <div style="font-size:22px;margin-bottom:6px">📸</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px">4. Histórico</div>
+        <div style="font-size:10px;color:var(--muted)">Snapshots dominicales guardados en tabla snapshots</div>
       </div>
     </div>
   </div>
@@ -620,8 +591,8 @@ const CATS = {
 
 let state = {
   avKey:     localStorage.getItem('av_key') || '',
-  gClientId: localStorage.getItem('g_client_id') || '',
-  gSheetId:  localStorage.getItem('g_sheet_id') || '',
+  sbUrl:     localStorage.getItem('sb_url') || '',
+  sbKey:     localStorage.getItem('sb_key') || '',
   operations: JSON.parse(localStorage.getItem('operations') || 'null') || getDefaultOps(),
   quotes: JSON.parse(localStorage.getItem('quotes') || '{}'),
   snapshots: JSON.parse(localStorage.getItem('snapshots') || '[]'),
@@ -1574,7 +1545,7 @@ function deleteOp(uid){
   save();
   renderAll();
   showToast(`🗑️ Eliminada: ${o.name}`,'warn');
-  if(gAccessToken && state.gSheetId) setTimeout(()=>syncWithSheets(), 600);
+  sbDeleteOp(uid);
 }
 
 function closeOpModal(){
@@ -1623,42 +1594,310 @@ function saveOperation(){
   save();
   closeOpModal();
   renderAll();
-  if(gAccessToken && state.gSheetId) setTimeout(()=>syncWithSheets(), 600);
+  sbSaveOp(op);
 }
 
 // ════════════════════════════════════════════════════════
-// CONFIG — Alpha Vantage
+// CONFIG — Alpha Vantage / Twelve Data
 // ════════════════════════════════════════════════════════
 function saveAvKey(){
   const k = document.getElementById('avKey').value.trim();
   if (!k) { showToast('Introduce una API key','warn'); return; }
   state.avKey = k;
   localStorage.setItem('av_key', k);
-  document.getElementById('avStatus').innerHTML = '<span style="color:var(--accent)">✅ Twelve Data API Key guardada. Pulsa "Actualizar cotizaciones" para probarla.</span>';
+  document.getElementById('avStatus').innerHTML = '<span style="color:var(--accent)">✅ Twelve Data API Key guardada.</span>';
   showToast('✅ Twelve Data API Key guardada','pos');
 }
 
 // ════════════════════════════════════════════════════════
-// GOOGLE SHEETS INTEGRATION
+// SUPABASE INTEGRATION
 // ════════════════════════════════════════════════════════
-const GSCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-const GAPI_DISCOVERY = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+function sbHeaders(){
+  return {
+    'Content-Type': 'application/json',
+    'apikey': state.sbKey,
+    'Authorization': `Bearer ${state.sbKey}`,
+    'Prefer': 'return=minimal',
+  };
+}
 
-let gTokenClient = null;
-let gAccessToken  = null;
-let gApiReady     = false;
-let gTokenReady   = false;
+function sbSetStatus(msg, ok=true){
+  const el = document.getElementById('sbStatus');
+  if(el) el.innerHTML = `<span style="color:${ok?'var(--accent)':'var(--red)'}">${msg}</span>`;
+}
 
-// Sheet name → range map
-const SHEET_RANGES = {
-  operaciones: 'Operaciones!B4:L200',
-  cotizaciones: 'Cotizaciones!B4:L50',
-  historico:   'Histórico!B4:N2000',
-};
+function sbSetBadge(connected){
+  const b = document.getElementById('sbBadge');
+  if(!b) return;
+  b.textContent  = connected ? '● Conectado' : '● No conectado';
+  b.style.background = connected ? 'rgba(0,229,160,.12)' : 'rgba(251,191,36,.12)';
+  b.style.color      = connected ? 'var(--accent)' : 'var(--yellow)';
+  const dot = document.getElementById('gStatusDot');
+  if(dot) dot.style.background = connected ? 'var(--accent)' : 'var(--muted)';
+  const txt = document.getElementById('gStatusText');
+  if(txt) txt.textContent = connected ? 'Supabase activo' : 'Supabase';
+}
 
-// Column order in each sheet (0-indexed, matches the Excel layout)
-const OP_COLS   = ['fecha','ticker','nombre','cat','tipo','broker','qty','precio','fees','total','notas'];
-const HIST_COLS = ['fecha','semana','manual','ticker','nombre','cat','qty','precio','cost','val','gp','pct','totalPortfolio'];
+async function sbSaveConfig(){
+  const url = document.getElementById('sbUrl').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('sbKey').value.trim();
+  if(!url || !key){ showToast('Rellena URL y anon key','warn'); return; }
+  state.sbUrl = url;
+  state.sbKey = key;
+  localStorage.setItem('sb_url', url);
+  localStorage.setItem('sb_key', key);
+  sbSetStatus('Probando conexión…');
+  // Quick test — fetch count from operaciones
+  try {
+    const r = await fetch(`${state.sbUrl}/rest/v1/operaciones?select=count`, {
+      headers: {...sbHeaders(), 'Prefer': 'count=exact'},
+    });
+    if(r.ok || r.status === 406){
+      sbSetBadge(true);
+      sbSetStatus(`✅ Conectado a Supabase · ${new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}`);
+      showToast('✅ Supabase conectado','pos');
+      sbPull();
+    } else {
+      const e = await r.text();
+      sbSetStatus(`❌ Error ${r.status}: ${e}`, false);
+      showToast('❌ Error conectando a Supabase','neg');
+    }
+  } catch(e){
+    sbSetStatus(`❌ ${e.message}`, false);
+    showToast('❌ No se pudo conectar a Supabase','neg');
+  }
+}
+
+// ── PULL: read all data from Supabase ──
+async function sbPull(){
+  if(!state.sbUrl || !state.sbKey){ showToast('⚠️ Configura Supabase primero','warn'); return; }
+  sbSetStatus('📥 Cargando desde Supabase…');
+  try {
+    // Operaciones
+    const ro = await fetch(`${state.sbUrl}/rest/v1/operaciones?select=*&order=fecha.asc`, {headers: sbHeaders()});
+    if(!ro.ok) throw new Error(`operaciones: ${ro.status}`);
+    const ops = await ro.json();
+    state.operations = ops.map(r=>({
+      uid:         r.uid,
+      date:        r.fecha,
+      ticker:      r.ticker||'',
+      name:        r.nombre,
+      cat:         r.categoria,
+      type:        r.tipo,
+      broker:      r.broker||'',
+      qty:         parseFloat(r.cantidad)||0,
+      price:       parseFloat(r.precio)||0,
+      fees:        parseFloat(r.fees)||0,
+      notes:       r.notas||'',
+      fondoMode:   r.fondo_mode||false,
+      aportado:    parseFloat(r.aportado)||0,
+      valorActual: parseFloat(r.valor_actual)||0,
+    }));
+
+    // Snapshots
+    const rs = await fetch(`${state.sbUrl}/rest/v1/snapshots?select=*&order=fecha.asc`, {headers: sbHeaders()});
+    if(!rs.ok) throw new Error(`snapshots: ${rs.status}`);
+    const snaps = await rs.json();
+    state.snapshots = snaps.map(r=>({
+      date:           r.fecha,
+      week:           r.semana,
+      manual:         r.manual,
+      ticker:         r.ticker||'',
+      name:           r.nombre,
+      cat:            r.categoria,
+      qty:            parseFloat(r.cantidad)||0,
+      price:          parseFloat(r.precio)||0,
+      cost:           parseFloat(r.coste)||0,
+      val:            parseFloat(r.valor)||0,
+      gp:             parseFloat(r.gp)||0,
+      pct:            parseFloat(r.rentab)||0,
+      totalPortfolio: parseFloat(r.total_portfolio)||0,
+    }));
+
+    // Cotizaciones
+    const rc = await fetch(`${state.sbUrl}/rest/v1/cotizaciones?select=*`, {headers: sbHeaders()});
+    if(rc.ok){
+      const cots = await rc.json();
+      cots.forEach(r=>{
+        state.quotes[r.ticker] = {
+          price:    parseFloat(r.precio)||0,
+          priceEur: parseFloat(r.precio_eur)||0,
+          date:     r.fecha_cotiz||'',
+          source:   r.fuente||'',
+          currency: r.divisa||'USD',
+        };
+      });
+    }
+
+    ensureUids();
+    save();
+    renderAll();
+    sbSetBadge(true);
+    const now = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    sbSetStatus(`✅ ${state.operations.length} operaciones · ${state.snapshots.length} snapshots · ${now}`);
+    document.getElementById('lastSyncLabel').textContent = 'Supabase: ' + now;
+    showToast(`✅ Cargado desde Supabase: ${state.operations.length} operaciones`,'pos');
+  } catch(e){
+    sbSetStatus(`❌ Error al leer: ${e.message}`, false);
+    showToast('❌ Error al leer Supabase','neg');
+  }
+}
+
+// ── PUSH: write all data to Supabase ──
+async function sbPush(){
+  if(!state.sbUrl || !state.sbKey){ showToast('⚠️ Configura Supabase primero','warn'); return; }
+  sbSetStatus('📤 Subiendo a Supabase…');
+  try {
+    // Upsert operaciones
+    const opsRows = state.operations.map(o=>({
+      uid:         o.uid,
+      fecha:       o.date,
+      ticker:      o.ticker||null,
+      nombre:      o.name,
+      categoria:   o.cat,
+      tipo:        o.type,
+      broker:      o.broker||null,
+      cantidad:    o.qty,
+      precio:      o.price,
+      fees:        o.fees||0,
+      notas:       o.notes||null,
+      fondo_mode:  o.fondoMode||false,
+      aportado:    o.aportado||null,
+      valor_actual:o.valorActual||null,
+      updated_at:  new Date().toISOString(),
+    }));
+    const ro = await fetch(`${state.sbUrl}/rest/v1/operaciones`, {
+      method: 'POST',
+      headers: {...sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal'},
+      body: JSON.stringify(opsRows),
+    });
+    if(!ro.ok) throw new Error(`operaciones upsert: ${ro.status} ${await ro.text()}`);
+
+    // Upsert cotizaciones
+    const cotRows = Object.entries(state.quotes).map(([tk,q])=>({
+      ticker:      tk,
+      precio:      q.price,
+      precio_eur:  q.priceEur,
+      divisa:      q.currency||'USD',
+      fecha_cotiz: q.date||null,
+      fuente:      q.source||null,
+      updated_at:  new Date().toISOString(),
+    }));
+    if(cotRows.length){
+      await fetch(`${state.sbUrl}/rest/v1/cotizaciones`, {
+        method: 'POST',
+        headers: {...sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal'},
+        body: JSON.stringify(cotRows),
+      });
+    }
+
+    const now = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    state.lastRefresh = new Date().toISOString();
+    save();
+    sbSetStatus(`✅ Subido a Supabase · ${now}`);
+    document.getElementById('lastSyncLabel').textContent = 'Sync: ' + now;
+    showToast('✅ Supabase actualizado','pos');
+  } catch(e){
+    sbSetStatus(`❌ Error al escribir: ${e.message}`, false);
+    showToast('❌ Error al escribir en Supabase','neg');
+  }
+}
+
+// ── Save single operation to Supabase ──
+async function sbSaveOp(op){
+  if(!state.sbUrl || !state.sbKey) return;
+  const row = {
+    uid:         op.uid,
+    fecha:       op.date,
+    ticker:      op.ticker||null,
+    nombre:      op.name,
+    categoria:   op.cat,
+    tipo:        op.type,
+    broker:      op.broker||null,
+    cantidad:    op.qty,
+    precio:      op.price,
+    fees:        op.fees||0,
+    notas:       op.notes||null,
+    fondo_mode:  op.fondoMode||false,
+    aportado:    op.aportado||null,
+    valor_actual:op.valorActual||null,
+    updated_at:  new Date().toISOString(),
+  };
+  try {
+    await fetch(`${state.sbUrl}/rest/v1/operaciones`, {
+      method: 'POST',
+      headers: {...sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal'},
+      body: JSON.stringify(row),
+    });
+  } catch(e){ console.error('sbSaveOp error', e); }
+}
+
+// ── Delete single operation from Supabase ──
+async function sbDeleteOp(uid){
+  if(!state.sbUrl || !state.sbKey) return;
+  try {
+    await fetch(`${state.sbUrl}/rest/v1/operaciones?uid=eq.${uid}`, {
+      method: 'DELETE',
+      headers: sbHeaders(),
+    });
+  } catch(e){ console.error('sbDeleteOp error', e); }
+}
+
+// ── Save snapshots batch to Supabase ──
+async function sbSaveSnapshots(entries){
+  if(!state.sbUrl || !state.sbKey) return;
+  const rows = entries.map(s=>({
+    fecha:           s.date,
+    semana:          s.week,
+    manual:          s.manual,
+    ticker:          s.ticker||null,
+    nombre:          s.name,
+    categoria:       s.cat,
+    cantidad:        s.qty,
+    precio:          s.price,
+    coste:           s.cost,
+    valor:           s.val,
+    gp:              s.gp,
+    rentab:          s.pct,
+    total_portfolio: s.totalPortfolio,
+  }));
+  try {
+    await fetch(`${state.sbUrl}/rest/v1/snapshots`, {
+      method: 'POST',
+      headers: {...sbHeaders(), 'Prefer': 'return=minimal'},
+      body: JSON.stringify(rows),
+    });
+  } catch(e){ console.error('sbSaveSnapshots error', e); }
+}
+
+// ════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════
+function showSection(id, el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'Dashboard',positions:'Posiciones',ops:'Operaciones',
+    quotes:'Cotizaciones',charts:'Gráficos',history:'Histórico semanal',config:'Configuración'};
+  document.getElementById('pageTitle').textContent = titles[id]||id;
+  closeSidebar();
+  if(id==='positions') renderPositions('all');
+  if(id==='quotes') renderQuotes();
+  if(id==='ops') renderOps();
+  if(id==='charts') setTimeout(renderCharts,60);
+  if(id==='history') setTimeout(renderHistory,60);
+  if(id==='config') {
+    document.getElementById('avKey').value  = state.avKey||'';
+    document.getElementById('sbUrl').value  = state.sbUrl||'';
+    document.getElementById('sbKey').value  = state.sbKey||'';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════
+function showSection(id, el){
 
 function saveGClientId(){
   const id = document.getElementById('gClientId').value.trim();
