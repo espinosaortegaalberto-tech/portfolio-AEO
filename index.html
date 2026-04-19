@@ -446,13 +446,15 @@ select option{background:var(--card)}
       </div>
     </div>
     <div class="panel">
-      <div class="panel-head"><span class="panel-title">📖 Guía de tickers (Twelve Data)</span></div>
+      <div class="panel-head"><span class="panel-title">📖 Guía de tickers</span></div>
       <div style="padding:18px;display:flex;flex-direction:column;gap:10px;font-size:12px">
-        <div><strong style="color:var(--text)">Acciones USA</strong><br><span class="ticker-badge">MSFT</span> <span class="ticker-badge">AAPL</span> <span class="ticker-badge">NVDA</span></div>
-        <div><strong style="color:var(--text)">Bolsa española</strong><br><span class="ticker-badge">SAN:BME</span> <span class="ticker-badge">ITX:BME</span> <span class="ticker-badge">TEF:BME</span></div>
-        <div><strong style="color:var(--text)">ETFs</strong><br><span class="ticker-badge">VWRL:LSE</span> <span class="ticker-badge">CSPX:LSE</span> <span class="ticker-badge">IWDA:AMS</span></div>
-        <div><strong style="color:var(--text)">Cripto</strong><br><span class="ticker-badge">BTC/EUR</span> <span class="ticker-badge">ETH/EUR</span> <span class="ticker-badge">SOL/EUR</span></div>
-        <div><strong style="color:var(--text)">Sin ticker</strong> → <span class="badge neu">Cash</span> <span class="badge neu">Trasteros</span> <span class="badge neu">Renta Fija manual</span></div>
+        <div style="padding:6px 10px;background:rgba(59,130,246,.08);border-radius:7px;font-size:10px;color:var(--accent2)">📡 <strong>Twelve Data</strong> para USA y cripto &nbsp;·&nbsp; 🌐 <strong>Yahoo Finance</strong> para Europa (sin key)</div>
+        <div><strong style="color:var(--text)">Acciones USA → Twelve Data</strong><br><span class="ticker-badge">MSFT</span> <span class="ticker-badge">AAPL</span> <span class="ticker-badge">NVDA</span></div>
+        <div><strong style="color:var(--text)">Bolsa española → Yahoo Finance</strong><br><span class="ticker-badge">GRF.MC</span> <span class="ticker-badge">SAN.MC</span> <span class="ticker-badge">ITX.MC</span> <span class="ticker-badge">BBVA.MC</span></div>
+        <div><strong style="color:var(--text)">Otras bolsas europeas → Yahoo Finance</strong><br><span class="ticker-badge">AIR.PA</span> <span class="ticker-badge">ASML.AS</span> <span class="ticker-badge">ULVR.L</span></div>
+        <div><strong style="color:var(--text)">ETFs → Yahoo Finance o Twelve Data</strong><br><span class="ticker-badge">VWRL.L</span> <span class="ticker-badge">CSPX.L</span> <span class="ticker-badge">IWDA.AS</span></div>
+        <div><strong style="color:var(--text)">Cripto → Twelve Data</strong><br><span class="ticker-badge">BTC/EUR</span> <span class="ticker-badge">ETH/EUR</span> <span class="ticker-badge">SOL/EUR</span></div>
+        <div><strong style="color:var(--text)">Sin ticker</strong> → <span class="badge neu">Cash</span> <span class="badge neu">Trasteros</span> <span class="badge neu">Fondos manuales</span></div>
       </div>
     </div>
   </div>
@@ -752,109 +754,140 @@ const fp = n => (n>=0?'+':'') + (n*100).toFixed(2) + '%';
 const fn = n => n.toLocaleString('es-ES',{maximumFractionDigits:6});
 
 // ════════════════════════════════════════════════════════
-// TWELVE DATA API
+// QUOTE FETCHING — Hybrid: Twelve Data (USA/Cripto) + Yahoo Finance (Europa)
 // ════════════════════════════════════════════════════════
-const TD_BASE = 'https://api.twelvedata.com';
+const TD_BASE    = 'https://api.twelvedata.com';
+const YF_PROXY   = 'https://query1.finance.yahoo.com/v8/finance/chart/';
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
-// Twelve Data usa formato "SYMBOL:EXCHANGE" para bolsas no-USA
-// Cripto usa "BTC/EUR" con barra
-// Esta función normaliza el ticker al formato correcto para TD
-function normalizeTicker(ticker){
-  // Cripto: BTC-EUR → BTC/EUR
-  if (/^[A-Z]+-(EUR|USD|GBP|USDT)$/i.test(ticker))
-    return ticker.replace('-','/');
-  // Ya tiene formato correcto (MSFT, VWRL:LSE, SAN:BME, etc.)
-  return ticker;
+// ── Detección de fuente por ticker ──
+// Yahoo format:  GRF.MC · SAN.MC · BBVA.MC · AIR.PA · ASML.AS · ULVR.L
+// TD format:     MSFT · NVDA · BTC/EUR · ETH/EUR
+function isYahooTicker(ticker){
+  // Tiene sufijo de bolsa con punto → Yahoo Finance
+  return /\.(MC|PA|AS|MI|L|DE|BR|SW|VI|HE|OL|ST|LS|CO|PR|AT|WA|IS)$/i.test(ticker);
 }
 
-// Detecta si es cripto
 function isCrypto(ticker){
   return /^[A-Z]+[-\/](EUR|USD|GBP|USDT)$/i.test(ticker);
 }
 
-// Detecta divisa a partir del ticker TD
-function getCurrencyFromTicker(ticker){
-  if (isCrypto(ticker)){
-    const pair = ticker.replace('-','/');
-    return pair.split('/')[1].toUpperCase();
-  }
-  // Bolsas europeas con sufijo conocido devuelven EUR
-  if (/(BME|EPA|AMS|MIL|FRA|SWX|BIT|ELI)$/i.test(ticker)) return 'EUR';
-  if (/LSE$/i.test(ticker)) return 'GBP';
-  return 'USD'; // Default USA
+function normalizeTdTicker(ticker){
+  if (/^[A-Z]+-(EUR|USD|GBP|USDT)$/i.test(ticker)) return ticker.replace('-','/');
+  return ticker;
 }
 
-async function fetchQuote(ticker){
-  if (!state.avKey) return null;
-  const tdTicker = normalizeTicker(ticker);
-  const crypto   = isCrypto(ticker);
-  const currency = getCurrencyFromTicker(ticker);
+function getCurrencyFromTicker(ticker){
+  if (isCrypto(ticker)){
+    return ticker.replace('-','/').split('/')[1].toUpperCase();
+  }
+  if (/\.(MC|PA|AS|MI|DE|BR|SW|VI|HE|OL|ST|LS|CO|PR|AT|WA|IS)$/i.test(ticker)) return 'EUR';
+  if (/\.L$/i.test(ticker)) return 'GBP';
+  if (/(BME|EPA|AMS|MIL|FRA|SWX|BIT|ELI)$/i.test(ticker)) return 'EUR';
+  if (/LSE$/i.test(ticker)) return 'GBP';
+  return 'USD';
+}
 
+// ── Yahoo Finance fetch (vía CORS proxy) ──
+async function fetchQuoteYahoo(ticker){
   try {
-    let url;
-    if (crypto) {
-      // Cripto: endpoint /price con par tipo BTC/EUR
-      url = `${TD_BASE}/price?symbol=${encodeURIComponent(tdTicker)}&apikey=${state.avKey}`;
-    } else {
-      // Acciones y ETFs: /quote devuelve precio + divisa + fecha
-      url = `${TD_BASE}/quote?symbol=${encodeURIComponent(tdTicker)}&apikey=${state.avKey}`;
-    }
-
-    const r = await fetch(url);
+    const url = `${YF_PROXY}${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+    const proxied = `${CORS_PROXY}${encodeURIComponent(url)}`;
+    const r = await fetch(proxied);
     const d = await r.json();
+    const result = d?.chart?.result?.[0];
+    if (!result) { console.warn(`Yahoo sin datos [${ticker}]`); return null; }
 
-    // Detección de error / rate limit
-    if (d.status === 'error' || d.code){
-      const msg = d.message || d.code || 'Error desconocido';
-      console.warn(`TD error [${ticker}]:`, msg);
-      if (String(d.code) === '429' || msg.toLowerCase().includes('limit'))
-        showToast('⚠️ Límite de llamadas Twelve Data alcanzado. Espera un momento.','warn');
-      return null;
-    }
+    const meta     = result.meta;
+    const price    = meta.regularMarketPrice || meta.previousClose;
+    const currency = (meta.currency||'EUR').toUpperCase();
+    const date     = new Date(meta.regularMarketTime*1000).toISOString().split('T')[0];
 
-    let price, date;
-    if (crypto) {
-      price = parseFloat(d.price);
-      date  = new Date().toISOString().split('T')[0];
-    } else {
-      price = parseFloat(d.close || d.price);
-      date  = d.datetime ? d.datetime.split(' ')[0] : new Date().toISOString().split('T')[0];
-    }
+    if (isNaN(price)) return null;
 
-    if (isNaN(price)) { console.warn(`TD sin precio [${ticker}]`, d); return null; }
-
-    // Conversión a EUR
     let priceEur;
-    if (currency === 'EUR') {
-      priceEur = price;
-    } else if (currency === 'GBP') {
-      // LSE cotiza en peniques (GBX) → dividir entre 100
-      priceEur = (price / 100) * state.gbpEur;
-    } else if (currency === 'USD' || currency === 'USDT') {
-      priceEur = price * state.usdEur;
-    } else {
-      priceEur = price; // par ya en EUR (cripto BTC/EUR)
-    }
+    if (currency === 'EUR')      priceEur = price;
+    else if (currency === 'GBX') priceEur = (price / 100) * state.gbpEur; // peniques Londres
+    else if (currency === 'GBP') priceEur = price * state.gbpEur;
+    else                         priceEur = price * state.usdEur;
 
-    return {price, priceEur, date, source:'TD', currency};
-
+    return {price, priceEur, date, source:'Yahoo', currency};
   } catch(e){
-    console.error(`fetchQuote error [${ticker}]`, e);
+    console.error(`Yahoo error [${ticker}]`, e);
     return null;
   }
 }
 
-// Tipo de cambio USD/EUR y GBP/EUR via Twelve Data
+// ── Twelve Data fetch (USA, cripto, ETFs globales) ──
+async function fetchQuoteTD(ticker){
+  if (!state.avKey) return null;
+  const tdTicker = normalizeTdTicker(ticker);
+  const crypto   = isCrypto(ticker);
+  const currency = getCurrencyFromTicker(ticker);
+
+  try {
+    const url = crypto
+      ? `${TD_BASE}/price?symbol=${encodeURIComponent(tdTicker)}&apikey=${state.avKey}`
+      : `${TD_BASE}/quote?symbol=${encodeURIComponent(tdTicker)}&apikey=${state.avKey}`;
+
+    const r = await fetch(url);
+    const d = await r.json();
+
+    if (d.status === 'error' || d.code){
+      const msg = d.message || String(d.code);
+      console.warn(`TD error [${ticker}]:`, msg);
+      if (msg.includes('429') || msg.toLowerCase().includes('limit'))
+        showToast('⚠️ Límite Twelve Data alcanzado. Espera un momento.','warn');
+      return null;
+    }
+
+    const price = parseFloat(crypto ? d.price : (d.close || d.price));
+    const date  = crypto
+      ? new Date().toISOString().split('T')[0]
+      : (d.datetime||'').split(' ')[0] || new Date().toISOString().split('T')[0];
+
+    if (isNaN(price)) return null;
+
+    let priceEur;
+    if (currency === 'EUR')            priceEur = price;
+    else if (currency === 'GBP')       priceEur = (price / 100) * state.gbpEur; // GBX
+    else if (['USD','USDT'].includes(currency)) priceEur = price * state.usdEur;
+    else                               priceEur = price;
+
+    return {price, priceEur, date, source:'TD', currency};
+  } catch(e){
+    console.error(`TD error [${ticker}]`, e);
+    return null;
+  }
+}
+
+// ── Router principal: elige fuente según el ticker ──
+async function fetchQuote(ticker){
+  if (isYahooTicker(ticker)){
+    // Valores europeos con sufijo .MC .PA .AS etc → Yahoo Finance (sin key)
+    const q = await fetchQuoteYahoo(ticker);
+    if (q) return q;
+    // Fallback a TD si Yahoo falla
+    console.warn(`Yahoo falló para ${ticker}, intentando TD...`);
+    return await fetchQuoteTD(ticker);
+  } else {
+    // USA, cripto, ETFs sin sufijo → Twelve Data
+    const q = await fetchQuoteTD(ticker);
+    if (q) return q;
+    // Fallback a Yahoo si TD falla
+    console.warn(`TD falló para ${ticker}, intentando Yahoo...`);
+    return await fetchQuoteYahoo(ticker);
+  }
+}
+
+// ── Tipos de cambio via Twelve Data ──
 async function fetchFxRate(from, to, stateKey){
   if (!state.avKey) return;
   try {
     const r = await fetch(`${TD_BASE}/price?symbol=${from}/${to}&apikey=${state.avKey}`);
     const d = await r.json();
     const rate = parseFloat(d.price);
-    if (!isNaN(rate)) {
-      state[stateKey] = rate;
-      console.log(`${from}/${to} actualizado:`, rate);
-    }
+    if (!isNaN(rate)){ state[stateKey]=rate; console.log(`${from}/${to}:`, rate); }
   } catch(e){}
 }
 
@@ -871,27 +904,27 @@ async function refreshAllQuotes(){
   icon.innerHTML = '<span class="spin"></span>';
   document.getElementById('quoteStatusTop').textContent = 'Actualizando cotizaciones…';
 
-  // Actualizar tipos de cambio primero (2 llamadas)
   await fetchUsdEur();
   await fetchGbpEur();
 
-  // Unique tickers from operations
   const tickers = [...new Set(state.operations.map(o=>o.ticker).filter(Boolean))];
-  let updated = 0, failed = 0, failedList = [];
+  let updated=0, failed=0, failedList=[];
+
   for (const ticker of tickers) {
     const q = await fetchQuote(ticker);
-    if (q) { state.quotes[ticker] = q; updated++; }
-    else { failed++; failedList.push(ticker); }
-    await new Promise(r => setTimeout(r, 200)); // TD permite ~8 req/s en plan gratuito
+    if (q){ state.quotes[ticker]=q; updated++; }
+    else  { failed++; failedList.push(ticker); }
+    await new Promise(r=>setTimeout(r, 250));
   }
 
   state.lastRefresh = new Date().toISOString();
   save();
   icon.innerHTML = '🔄';
+  const now = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
   document.getElementById('quoteStatusTop').textContent = `✅ ${updated} actualizados · ${failed} errores`;
-  document.getElementById('lastSyncLabel').textContent = 'Cotiz: ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-  document.getElementById('quotesBadge').textContent = updated > 0 ? '✓' : '';
-  if (failedList.length) console.warn('Tickers sin datos:', failedList);
+  document.getElementById('lastSyncLabel').textContent  = 'Cotiz: ' + now;
+  document.getElementById('quotesBadge').textContent    = updated>0?'✓':'';
+  if (failedList.length) console.warn('Sin datos:', failedList);
   renderAll();
   showToast(`✅ ${updated} cotizaciones actualizadas · ${failed} sin datos`, updated>0?'pos':'warn');
   checkAndTakeSnapshot();
