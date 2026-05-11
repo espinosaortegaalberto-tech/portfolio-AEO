@@ -666,17 +666,16 @@ function getPositions(){
       map[key].totalCost  += op.aportado || op.price || 0;
       map[key].valorActual = op.valorActual || op.aportado || 0;
 
+    // ── TRASTEROS ──
     } else if (op.cat === 'Trasteros') {
-      // COMPRA = aportación de capital (inversión)
-      // INGRESO = pago recibido (alquiler, venta parcial…)
       if (op.type === 'COMPRA') {
         map[key].aportaciones += op.qty * op.price + (op.fees||0);
         map[key].totalCost    += op.qty * op.price + (op.fees||0);
         map[key].qty          += op.qty;
-      } else if (op.type === 'INGRESO') {
+      } else if (op.type === 'INGRESO' || op.type === 'DIVIDENDO') {
         map[key].ingresos += op.qty * op.price;
       } else if (op.type === 'VENTA') {
-        map[key].ingresos += op.qty * op.price; // venta = ingreso final
+        map[key].ingresos += op.qty * op.price;
         map[key].qty      -= op.qty;
       }
 
@@ -700,14 +699,16 @@ function getPositions(){
       return {...p, qty:1, avgBuy:cost, curPrice:val, val, cost, gp, pct, quoteDate:null, quoteSource:'manual'};
     }
 
-    // ── TRASTEROS: coste=COMPRAS, val=INGRESOS, gp=val-coste, pct=val/coste-1 ──
+    // ── TRASTEROS: coste=COMPRAS, val=COMPRAS-INGRESOS (capital neto invertido), gp=INGRESOS, pct=ingresos/aportaciones-1 ──
     if (p.cat === 'Trasteros') {
-      const cost = p.aportaciones;   // suma de COMPRAs
-      const val  = p.ingresos;       // suma de INGRESOs
-      const gp   = val - cost;
-      const pct  = cost ? (val / cost) - 1 : 0;
+      const aportaciones = p.aportaciones;        // suma de COMPRAs
+      const ingresos     = p.ingresos;             // suma de INGRESOs
+      const val          = aportaciones - ingresos; // capital neto aún invertido
+      const cost         = aportaciones;            // coste total aportado
+      const gp           = ingresos;                // ganancia = lo ya cobrado
+      const pct          = cost ? (ingresos / cost) - 1 : 0; // (ingresos/aportaciones - 1)
       return {...p, avgBuy:0, curPrice:0, val, cost, gp, pct,
-               ingresos:val, quoteDate:null, quoteSource:'manual'};
+               ingresos, aportaciones, quoteDate:null, quoteSource:'manual'};
     }
 
     // ── ESTÁNDAR (acciones, cripto, etc.) ──
@@ -1105,7 +1106,10 @@ function renderPositions(tab){
 
     return `<tr>
       <td>${p.ticker?`<span class="ticker-badge">${p.ticker}</span>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
-      <td><strong style="font-size:12px">${p.name}</strong></td>
+      <td>
+        <strong style="font-size:12px">${p.name}</strong>
+        ${isTrastero ? `<br><span style="font-size:10px;color:var(--muted)">Aport: ${fe(p.aportaciones||0)} · Ing: ${fe(p.ingresos||0)}</span>` : ''}
+      </td>
       <td><span class="tag">${CATS[p.cat]?.label||p.cat}</span></td>
       <td class="mono">${isTrastero ? '—' : fn(p.qty)}</td>
       <td class="mono">${isTrastero ? '—' : fe(p.avgBuy)}</td>
