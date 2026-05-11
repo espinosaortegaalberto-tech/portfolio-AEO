@@ -658,7 +658,7 @@ function getPositions(){
       ticker:op.ticker, name:op.name, cat:op.cat,
       qty:0, totalCost:0, fondoMode:false, valorActual:0,
       // Trasteros
-      aportaciones:0, ingresos:0,
+      aportaciones:0, ingresos:0, dividendos:0,
     };
 
     if (op.fondoMode) {
@@ -672,10 +672,12 @@ function getPositions(){
         map[key].aportaciones += op.qty * op.price + (op.fees||0);
         map[key].totalCost    += op.qty * op.price + (op.fees||0);
         map[key].qty          += op.qty;
-      } else if (op.type === 'INGRESO' || op.type === 'DIVIDENDO') {
-        map[key].ingresos += op.qty * op.price;
+      } else if (op.type === 'INGRESO') {
+        map[key].ingresos   += op.qty * op.price;  // reduce capital comprometido
+      } else if (op.type === 'DIVIDENDO') {
+        map[key].dividendos += op.qty * op.price;  // retorno pero NO reduce capital
       } else if (op.type === 'VENTA') {
-        map[key].ingresos += op.qty * op.price;
+        map[key].ingresos += op.qty * op.price;    // venta sí reduce capital
         map[key].qty      -= op.qty;
       }
 
@@ -699,16 +701,21 @@ function getPositions(){
       return {...p, qty:1, avgBuy:cost, curPrice:val, val, cost, gp, pct, quoteDate:null, quoteSource:'manual'};
     }
 
-    // ── TRASTEROS: coste=COMPRAS, val=COMPRAS-INGRESOS (capital neto invertido), gp=INGRESOS, pct=ingresos/aportaciones-1 ──
+    // ── TRASTEROS ──
+    // val  = Aportaciones − Ingresos          (capital neto comprometido, sin contar dividendos)
+    // gp   = Ingresos + Dividendos            (retorno total recibido)
+    // pct  = (Ingresos + Dividendos) / Aportaciones − 1
     if (p.cat === 'Trasteros') {
-      const aportaciones = p.aportaciones;        // suma de COMPRAs
-      const ingresos     = p.ingresos;             // suma de INGRESOs
-      const val          = aportaciones - ingresos; // capital neto aún invertido
-      const cost         = aportaciones;            // coste total aportado
-      const gp           = ingresos;                // ganancia = lo ya cobrado
-      const pct          = cost ? (ingresos / cost) - 1 : 0; // (ingresos/aportaciones - 1)
+      const aportaciones = p.aportaciones;
+      const ingresos     = p.ingresos;
+      const dividendos   = p.dividendos || 0;
+      const retornoTotal = ingresos + dividendos;
+      const val  = aportaciones - ingresos;           // capital neto (dividendos no reducen)
+      const cost = aportaciones;
+      const gp   = retornoTotal;
+      const pct  = cost ? (retornoTotal / cost) - 1 : 0;
       return {...p, avgBuy:0, curPrice:0, val, cost, gp, pct,
-               ingresos, aportaciones, quoteDate:null, quoteSource:'manual'};
+               ingresos, dividendos, aportaciones, quoteDate:null, quoteSource:'manual'};
     }
 
     // ── ESTÁNDAR (acciones, cripto, etc.) ──
@@ -1108,7 +1115,7 @@ function renderPositions(tab){
       <td>${p.ticker?`<span class="ticker-badge">${p.ticker}</span>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
       <td>
         <strong style="font-size:12px">${p.name}</strong>
-        ${isTrastero ? `<br><span style="font-size:10px;color:var(--muted)">Aport: ${fe(p.aportaciones||0)} · Ing: ${fe(p.ingresos||0)}</span>` : ''}
+        ${isTrastero ? `<br><span style="font-size:10px;color:var(--muted)">Aport: ${fe(p.aportaciones||0)} · Ing: ${fe(p.ingresos||0)}${p.dividendos>0?' · Div: '+fe(p.dividendos):''}</span>` : ''}
       </td>
       <td><span class="tag">${CATS[p.cat]?.label||p.cat}</span></td>
       <td class="mono">${isTrastero ? '—' : fn(p.qty)}</td>
