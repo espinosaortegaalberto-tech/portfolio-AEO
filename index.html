@@ -703,16 +703,16 @@ function getPositions(){
 
     // ── TRASTEROS ──
     // val  = Aportaciones − Ingresos          (capital neto comprometido, sin contar dividendos)
-    // gp   = Ingresos + Dividendos            (retorno total recibido)
+    // gp   = Ingresos + Dividendos − Aportaciones  (resultado neto real)
     // pct  = (Ingresos + Dividendos) / Aportaciones − 1
     if (p.cat === 'Trasteros') {
       const aportaciones = p.aportaciones;
       const ingresos     = p.ingresos;
       const dividendos   = p.dividendos || 0;
       const retornoTotal = ingresos + dividendos;
-      const val  = aportaciones - ingresos;           // capital neto (dividendos no reducen)
+      const val  = aportaciones - ingresos;                    // capital neto (dividendos no reducen)
       const cost = aportaciones;
-      const gp   = retornoTotal;
+      const gp   = retornoTotal - aportaciones;                // resultado neto real
       const pct  = cost ? (retornoTotal / cost) - 1 : 0;
       return {...p, avgBuy:0, curPrice:0, val, cost, gp, pct,
                ingresos, dividendos, aportaciones, quoteDate:null, quoteSource:'manual'};
