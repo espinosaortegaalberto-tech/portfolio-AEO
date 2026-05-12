@@ -1986,24 +1986,28 @@ function importFromExcel(input){
       const dataRows = rows.slice(headerIdx + 1).filter(r => r[0] && String(r[0]).trim());
 
       _importParsed = dataRows.map((r, i) => {
-        // Parse date — handles DD/MM/YYYY string or JS Date object
+        // Parse date — handles DD/MM/YYYY string or JS Date object or Excel serial
         let date = '';
-        if (r[0]) {
+        if (r[0] !== '' && r[0] !== null && r[0] !== undefined) {
           const raw = r[0];
           if (raw instanceof Date) {
-            // SheetJS parsed it as a Date object
-            const d = raw;
-            date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            // JS Date object from SheetJS cellDates:true
+            date = `${raw.getFullYear()}-${String(raw.getMonth()+1).padStart(2,'0')}-${String(raw.getDate()).padStart(2,'0')}`;
+          } else if (typeof raw === 'number') {
+            // Excel serial number → convert via SheetJS
+            const d = XLSX.SSF.parse_date_code(raw);
+            date = `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
           } else {
             const str = String(raw).trim();
-            // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+            // DD/MM/YYYY or DD-MM-YYYY
             const m = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
             if (m) {
-              const y = m[3].length === 2 ? '20'+m[3] : m[3];
-              date = `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+              const day = m[1].padStart(2,'0');
+              const mon = m[2].padStart(2,'0');
+              const yr  = m[3].length === 2 ? '20'+m[3] : m[3];
+              date = `${yr}-${mon}-${day}`;
             } else {
-              // Already YYYY-MM-DD?
-              date = str;
+              date = str; // assume already YYYY-MM-DD
             }
           }
         }
