@@ -715,7 +715,7 @@ function getPositions(){
       const ingresos     = p.ingresos;
       const dividendos   = p.dividendos || 0;
       const retornoTotal = ingresos + dividendos;
-      const val  = aportaciones - ingresos;                    // capital neto (dividendos no reducen)
+      const val  = Math.max(0, aportaciones - ingresos); // capital neto, mínimo 0
       const cost = aportaciones;
       const gp   = retornoTotal - aportaciones;                // resultado neto real
       const pct  = cost ? (retornoTotal / cost) - 1 : 0;
