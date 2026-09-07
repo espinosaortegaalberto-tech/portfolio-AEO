@@ -667,8 +667,14 @@ function getPositions(){
       aportaciones:0, ingresos:0, dividendos:0,
     };
 
-    // valorActualSheet: tomar el último valor no-cero (no acumular)
-    if (op.valorActualSheet > 0) map[key].valorActualSheet = op.valorActualSheet;
+    // valorActualSheet: para Fondos tomar el último valor, para Acciones/ETFs y Cripto sumar
+    if (op.valorActualSheet > 0) {
+      if (['Fondos'].includes(op.cat)) {
+        map[key].valorActualSheet = op.valorActualSheet; // último valor
+      } else {
+        map[key].valorActualSheet += op.valorActualSheet; // acumular
+      }
+    }
 
     if (op.fondoMode) {
       map[key].fondoMode   = true;
@@ -733,7 +739,7 @@ function getPositions(){
 
     // Para Acciones/ETFs y Fondos: usar valorActualSheet (calculado en Sheets) si está disponible
     // Para el resto (Cripto, Renta Fija, Cash): usar cotización de la API
-    const useSheetVal = ['Acciones/ETFs','Fondos'].includes(p.cat);
+    const useSheetVal = ['Acciones/ETFs','Fondos','Cripto'].includes(p.cat);
     const sheetVal    = p.valorActualSheet || 0;
 
     let val, curPrice;
