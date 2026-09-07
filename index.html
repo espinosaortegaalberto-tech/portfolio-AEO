@@ -704,10 +704,11 @@ function getPositions(){
     // ── FONDO MODE ──
     if (p.fondoMode) {
       const cost = p.totalCost;
-      const val  = p.valorActual;
+      // Usar valorActualSheet (col O de Sheets) si está disponible, si no usar valorActual manual
+      const val  = p.valorActualSheet > 0 ? p.valorActualSheet : p.valorActual;
       const gp   = val - cost;
       const pct  = cost ? gp/cost : 0;
-      return {...p, qty:1, avgBuy:cost, curPrice:val, val, cost, gp, pct, quoteDate:null, quoteSource:'manual'};
+      return {...p, qty:1, avgBuy:cost, curPrice:val, val, cost, gp, pct, quoteDate:null, quoteSource: p.valorActualSheet > 0 ? 'Sheets' : 'manual'};
     }
 
     // ── TRASTEROS ──
