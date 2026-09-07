@@ -1804,14 +1804,14 @@ async function gsPull(){
         cat:        r[4]||'',
         type:       (r[5]||'COMPRA').toUpperCase(),
         broker:     r[6]||'',
-        qty:        parseFloat(r[7])||0,
-        price:      parseFloat(r[8])||0,
-        fees:       parseFloat(r[9])||0,
+        qty:             gsParseFloat(r[7]),
+        price:           gsParseFloat(r[8]),
+        fees:            gsParseFloat(r[9]),
         fondoMode:       r[10]==='TRUE'||r[10]===true,
-        aportado:        parseFloat(r[11])||0,
-        valorActual:     parseFloat(r[12])||0,
+        aportado:        gsParseFloat(r[11]),
+        valorActual:     gsParseFloat(r[12]),
         notes:           r[13]||'',
-        valorActualSheet:parseFloat(r[14])||0, // columna O — calculado en Sheets con cotizaciones
+        valorActualSheet:gsParseFloat(r[14]),
       }));
     }
 
@@ -1828,9 +1828,9 @@ async function gsPull(){
         ticker:         r[3]||'',
         name:           r[4]||'',
         cat:            r[5]||'',
-        qty:            parseFloat(r[6])||0,
-        price:          parseFloat(r[7])||0,
-        cost:           parseFloat(r[8])||0,
+        qty:            gsParseFloat(r[6]),
+        price:          gsParseFloat(r[7]),
+        cost:           gsParseFloat(r[8]),
         val:            parseFloat(r[9])||0,
         gp:             parseFloat(r[10])||0,
         pct:            parseFloat(r[11])||0,
@@ -1925,7 +1925,10 @@ async function gsSaveSnapshots(entries){
   } catch(e){ console.error('gsSaveSnapshots error',e); }
 }
 
-// ── Date helpers ──
+function gsParseFloat(val){
+  if(!val && val!==0) return 0;
+  return parseFloat(String(val).replace(/\./g,'').replace(',','.')) || 0;
+}
 function gsParseDate(raw){
   if(!raw) return '';
   const s = String(raw).trim();
