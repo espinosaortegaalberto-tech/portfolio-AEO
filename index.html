@@ -662,9 +662,13 @@ function getPositions(){
     if (!map[key]) map[key] = {
       ticker:op.ticker, name:op.name, cat:op.cat,
       qty:0, totalCost:0, fondoMode:false, valorActual:0,
+      valorActualSheet:0,
       // Trasteros
       aportaciones:0, ingresos:0, dividendos:0,
     };
+
+    // Acumular valorActualSheet (suma de todos los valores actuales por posición)
+    if (op.valorActualSheet) map[key].valorActualSheet += op.valorActualSheet;
 
     if (op.fondoMode) {
       map[key].fondoMode   = true;
@@ -725,13 +729,26 @@ function getPositions(){
 
     // ── ESTÁNDAR (acciones, cripto, etc.) ──
     const avgBuy   = p.qty > 0 ? p.totalCost / p.qty : 0;
-    const q        = p.ticker ? state.quotes[p.ticker] : null;
-    const curPrice = q ? q.priceEur : (p.totalCost / Math.max(p.qty,1));
-    const val  = p.qty * curPrice;
+
+    // Para Acciones/ETFs y Fondos: usar valorActualSheet (calculado en Sheets) si está disponible
+    // Para el resto (Cripto, Renta Fija, Cash): usar cotización de la API
+    const useSheetVal = ['Acciones/ETFs','Fondos'].includes(p.cat);
+    const sheetVal    = p.valorActualSheet || 0;
+
+    let val, curPrice;
+    if (useSheetVal && sheetVal > 0) {
+      val      = sheetVal;
+      curPrice = p.qty > 0 ? sheetVal / p.qty : 0;
+    } else {
+      const q  = p.ticker ? state.quotes[p.ticker] : null;
+      curPrice = q ? q.priceEur : (p.totalCost / Math.max(p.qty,1));
+      val      = p.qty * curPrice;
+    }
+
     const cost = p.totalCost;
     const gp   = val - cost;
     const pct  = cost ? gp/cost : 0;
-    return {...p, avgBuy, curPrice, val, cost, gp, pct, quoteDate: q?.date, quoteSource: q?.source};
+    return {...p, avgBuy, curPrice, val, cost, gp, pct, quoteDate: p.quoteDate, quoteSource: useSheetVal && sheetVal > 0 ? 'Sheets' : (p.ticker ? state.quotes[p.ticker]?.source : 'manual')};
   });
 }
 
@@ -1671,7 +1688,7 @@ let gsAccessToken    = null;
 let gsApiReady       = false;
 
 // Sheet ranges
-const GS_OPS_RANGE   = 'Operaciones!A2:N';
+const GS_OPS_RANGE   = 'Operaciones!A2:O';
 const GS_COT_RANGE   = 'Cotizaciones!A2:G';
 const GS_SNAP_RANGE  = 'Snapshots!A2:M';
 
@@ -1789,10 +1806,11 @@ async function gsPull(){
         qty:        parseFloat(r[7])||0,
         price:      parseFloat(r[8])||0,
         fees:       parseFloat(r[9])||0,
-        fondoMode:  r[10]==='TRUE'||r[10]===true,
-        aportado:   parseFloat(r[11])||0,
-        valorActual:parseFloat(r[12])||0,
-        notes:      r[13]||'',
+        fondoMode:       r[10]==='TRUE'||r[10]===true,
+        aportado:        parseFloat(r[11])||0,
+        valorActual:     parseFloat(r[12])||0,
+        notes:           r[13]||'',
+        valorActualSheet:parseFloat(r[14])||0, // columna O — calculado en Sheets con cotizaciones
       }));
     }
 
